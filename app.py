@@ -1,9 +1,11 @@
-from flask import Flask, jsonify, request, send_from_directory, render_template, redirect, url_for
+from flask import Flask, jsonify, request, send_from_directory, render_template, redirect, url_for, session
 from flask_cors import CORS
 import pandas as pd
 import os
 from flask_mysqldb import MySQL
 from sqlalchemy import create_engine
+
+from dekorator_login import login_required
 
 # import matplotlib.pyplot as plt
 
@@ -18,6 +20,7 @@ from sqlalchemy import create_engine
 # from show_bar_chart import show_bar_chart
 
 app = Flask(__name__)
+app.secret_key = "teacher_honorer"
 
 # Koneksi ke database
 app.config['MYSQL_HOST'] = 'localhost'
@@ -36,10 +39,59 @@ app.config['DEBUG'] = True
 # UPLOAD_FOLDER = 'uploads'
 # app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Route utama
+# Route Home
 @app.route('/')
 def index():
-     return 'API Guru Honorer'
+     return redirect(url_for('login'))
+
+# Route Login
+@app.route('/login', methods=['GET','POST'])
+def login():
+     # Cek jika sudah login
+     if 'username' in session:
+          return redirect(url_for('allTweet'))
+
+     if request.method == 'POST':
+          username = request.form['username']
+          pwd = request.form['password']
+          cur = mysql.connection.cursor()
+          cur.execute(f"SELECT username, password FROM users WHERE username = '{username}'")
+          user = cur.fetchone()
+          cur.close()
+          # Kondisi jika username atau password salah
+          if user and pwd == user[1]:
+               session['username'] = user[0]
+               return redirect(url_for('allTweet'))
+          else:
+               return render_template('login.html', error='Alamat email atau password salah')
+     return render_template('login.html')
+
+# Route Register
+@app.route('/register', methods=['GET','POST'])
+def register():
+     # Cek jika sudah register
+     if 'username' in session:
+          return redirect(url_for('allTweet'))
+
+     if request.method == 'POST':
+          username = request.form['username']
+          pwd = request.form['password']
+          email = request.form['email']
+
+          cur = mysql.connection.cursor()
+          cur.execute(f"INSERT INTO users (username, email, password) VALUES ('{username}', '{email}', '{pwd}')")
+          mysql.connection.commit()
+          cur.close()
+
+          return redirect(url_for('login'))
+     
+     return render_template('register.html')
+
+# Route Logout
+@app.route('/logout')
+def logout():
+     session.pop('username', None)
+     return redirect(url_for('login'))
 
 # Route untuk menyimpan data csv ke dalam database
 @app.route('/save-csv-to-database')
@@ -56,6 +108,7 @@ def saveCSVToDatabase():
 
 # Route untuk menampilkan semua data dari database
 @app.route('/all-tweet', methods=['GET'])
+@login_required
 def allTweet():
      cur = mysql.connection.cursor()
      # Tampilkan semua data
@@ -63,7 +116,8 @@ def allTweet():
      data = cur.fetchall()
      cur.close()
 
-     return render_template('tweetGuru.html', data=data)
+     username = session['username']
+     return render_template('tweetGuru.html', data=data, current_url=request.path, username=username)
 
 # Route Beranda
 # @app.route('/')
