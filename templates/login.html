@@ -1,11 +1,22 @@
 {% extends 'base.html' %}
 
-{% block title %}Register{% endblock %}
+{% block title %}Login{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
      <h3 class="mb-3 text-center">Login</h3>
      <form method="post" accept="/login">
+          <div class="row">
+               <!-- Pesan jika username dan password kosong -->
+               <!-- EDITOR NABIL 14/05/2024 -->
+               <!-- <div class="col-md-8 col-lg-6 mx-auto">
+                    {% if error %}
+                    <div class="alert alert-danger" role="alert">
+                         {{ error }}
+                    </div>
+                    {% endif %}
+               </div> -->
+          </div>
           <div class="row">
                <div class="col-md-8 col-lg-6 mx-auto">
                     <div class="mb-3 col-12">
