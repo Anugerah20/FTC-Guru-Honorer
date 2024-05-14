@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_from_directory, render_template, redirect, url_for, session
+from flask import Flask, jsonify, request, send_from_directory, render_template, redirect, url_for, session, flash
 from flask_cors import CORS
 import pandas as pd
 import os
@@ -54,16 +54,31 @@ def login():
      if request.method == 'POST':
           username = request.form['username']
           pwd = request.form['password']
+
+          # Cek username dan password tidak boleh kosong
+          if not username or not pwd:
+               flash('Email dan password tidak boleh kosong', 'danger')
+               return redirect(url_for('login'))
+               
+               # Editor Nabil (14/05/2024)
+               # return render_template('login.html', error='Alamat email atau password tidak boleh kosong')
+
           cur = mysql.connection.cursor()
           cur.execute(f"SELECT username, password FROM users WHERE username = '{username}'")
           user = cur.fetchone()
           cur.close()
-          # Kondisi jika username atau password salah
+
+          # Kondisi jika login berhasil dan gagal
           if user and pwd == user[1]:
                session['username'] = user[0]
+               flash('Login berhasil', 'success')
                return redirect(url_for('allTweet'))
           else:
-               return render_template('login.html', error='Alamat email atau password salah')
+               flash('Email dan password salah', 'danger')
+               return redirect(url_for('login'))
+          
+               # Editor Nabil (14/05/2024)
+               # return render_template('login.html', error='Alamat email atau password salah')
      return render_template('login.html')
 
 # Route Register
@@ -78,11 +93,19 @@ def register():
           pwd = request.form['password']
           email = request.form['email']
 
+          # Cek username, passowrd, dan email tidak boleh kosong
+          if not username and not pwd and not email:
+               flash('Username, email dan password tidak boleh kosong', 'danger')
+               return redirect(url_for('register'))
+
+               # Editor Nabil (14/05/2024)
+               # return render_template('register.html', error='Username, email, dan password tidak boleh kosong')
+
           cur = mysql.connection.cursor()
           cur.execute(f"INSERT INTO users (username, email, password) VALUES ('{username}', '{email}', '{pwd}')")
           mysql.connection.commit()
           cur.close()
-
+          #  Kalau register berhasil akan ke halaman login
           return redirect(url_for('login'))
      
      return render_template('register.html')
@@ -116,6 +139,7 @@ def allTweet():
      data = cur.fetchall()
      cur.close()
 
+     # Mencegah ketika sudah login tidak bisa ke halaman login
      username = session['username']
      return render_template('tweetGuru.html', data=data, current_url=request.path, username=username)
 
