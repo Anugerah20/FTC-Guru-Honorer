@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Preprocessing Guru{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+     <div class="table-responsive-sm table-responsive-md">
+          <h2 class="mb-3">Preprocessing</h2>
+
+          <!-- <div class="row">
+               <div class="col-md-6 col-lg-6 my-3">
+                    <form method="post" enctype="multipart/form-data" action="">
+                         <label for="file">Unggah file csv</label>
+                         <input type="file" required>
+                         <button class="btn btn-dark">Unggah</button>
+                    </form>
+               </div>
+          </div> -->
+
+          <table class="table table-bordered table-striped">
+               <thead>
+                    <tr>
+                         <th>#</th>
+                         <!-- <th>Username</th> -->
+                         <th>Full Text</th>
+                         <!-- <th>Created At</th> -->
+                    </tr>
+               </thead>
+               <tbody>
+                    {% for row in data %}
+                    <tr>
+                         <td>{{ row[0] }}</td>
+                         <!-- <td>{{ row[1] }}</td> -->
+                         <td>{{ row[2] }}</td>
+                         <!-- <td>{{ row[3] }}</td> -->
+                    </tr>
+                    {% endfor %}
+               </tbody>
+          </table>
+     </div>
+</div>
+{% endblock %}
