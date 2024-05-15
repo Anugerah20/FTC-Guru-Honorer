@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Kamus training{% endblock %}
+
+{% block content %}
+<form method="post">
+     <div class="row">
+          <div class="col-md-6 col-lg-6 mx-auto">
+               <label for="sentence" class="form-label">Masukkan Kalimat:</label>
+               <input type="text" id="sentence" name="sentence" class="form-control" required>
+               <button class="btn btn-dark mt-3" type="submit">submit</button>
+          </div>
+     </div>
+</form>
+
+{% if sentence %}
+<div class="row">
+     <div class="col-md-6 col-lg-6 mx-auto mt-3">
+          <p>Kalimat: {{ sentence }}</p>
+          <p>Kategori: {{ category }}</p>
+     </div>
+</div>
+{% endif %}
+
+{% endblock %}
