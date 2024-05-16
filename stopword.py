@@ -162,5 +162,8 @@ new_array = ArrayDictionary(stop_words)
 stop_words_remover_new = StopWordRemover(new_array)
 
 def stopword(str_text):
-    str_text = stop_words_remover_new.remove(str_text)
-    return str_text
+    return stop_words_remover_new.remove(str_text)
+
+    # Editor Nabil 16/05/2024
+    # str_text = stop_words_remover_new.remove(str_text)
+    # return str_text
