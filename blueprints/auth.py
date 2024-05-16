@@ -7,7 +7,10 @@ auth = Blueprint('auth', __name__)
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     if 'username' in session:
-        return redirect(url_for('main.allTweet'))
+        # Editor: Nabil (16/05/2024)
+        # return redirect(url_for('main.allTweet'))
+
+        return redirect(url_for('main.showGuru'))
 
     if request.method == 'POST':
         username = request.form['username']
@@ -25,7 +28,11 @@ def login():
         if user and pwd == user[1]:
             session['username'] = user[0]
             flash('Login berhasil', 'success')
-            return redirect(url_for('main.allTweet'))
+
+            # Editor: Nabil (16/05/2024)
+            # return redirect(url_for('main.allTweet'))
+            
+            return redirect(url_for('main.showGuru'))
         else:
             flash('Email dan password salah', 'danger')
             return redirect(url_for('auth.login'))
@@ -35,7 +42,10 @@ def login():
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
     if 'username' in session:
-        return redirect(url_for('main.allTweet'))
+
+        # Editor: Nabil (16/05/2024)
+        # return redirect(url_for('main.allTweet'))
+        return redirect(url_for('main.showGuru'))
 
     if request.method == 'POST':
         username = request.form['username']
