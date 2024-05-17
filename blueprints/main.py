@@ -4,7 +4,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 from extensions import mysql
 from flask import current_app as app
-from dateutil import parser
+from dateutil import parser as date_parser
 from datetime import datetime
 
 # Import fungsi preprocessing
@@ -20,10 +20,10 @@ import os
 
 # data uji dan data latih
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.model_selection import train_test_split
+# from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score
-from sklearn.pipeline import make_pipeline
+# from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import LabelEncoder
 import joblib
 
@@ -31,6 +31,11 @@ main = Blueprint('main', __name__)
 # Upload file
 # UPLOAD_FOLDER = 'uploads'
 # app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Route index
+# @main.route('/')
+# def index():
+#     return render_template('upload.html')
 
 # @main.route('/upload-file',methods=['POST'])
 # def uploadFile():
@@ -45,20 +50,25 @@ main = Blueprint('main', __name__)
 #           return redirect(url_for('home'))
      
 # def parseCSV(file_path):
-#      col_names = [
-#      'conversation_id_str', 'created_at', 'favorite_count', 'full_text', 'id_str',
-#      'image_url', 'in_reply_to_screen_name', 'lang', 'location', 'quote_count',
-#      'reply_count', 'retweet_count', 'tweet_url', 'user_id_str', 'username'
-#      ]
+#     col_names = [
+#         'conversation_id_str'
+#     ]
+#     col_names = [
+#         'conversation_id_str', 'created_at', 'favorite_count', 'full_text', 'id_str',
+#         'image_url', 'in_reply_to_screen_name', 'lang', 'location', 'quote_count',
+#         'reply_count', 'retweet_count', 'tweet_url', 'user_id_str', 'username'
+#     ]
 
-#      csvData = pd.read_csv(file_path,names=col_names,header=None)
+#     csvData = pd.read_csv(file_path,names=col_names,header=None)
 
-#         for row in csvData.iterrows():
-#             sql = """INSERT INTO tweet_guru (
-#                     conversation_id_str, created_at, favorite_count, full_text, id_str,
-#                     image_url, in_reply_to_screen_name, lang, location, quote_count,
-#                     reply_count, retweet_count, tweet_url, user_id_str, username
-#             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+
+#     for i, row in csvData.iterrows():
+#         sql = """INSERT INTO tweet_guru (
+#                 conversation_id_str, created_at, favorite_count, full_text, id_str,
+#                 image_url, in_reply_to_screen_name, lang, location, quote_count,
+#                 reply_count, retweet_count, tweet_url, user_id_str, username
+#         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+
 #         value = (
 #             row['conversation_id_str'], row['created_at'], row['favorite_count'], row['full_text'], row['id_str'],
 #             row['image_url'], row['in_reply_to_screen_name'], row['lang'], row['location'], row['quote_count'],
@@ -109,9 +119,19 @@ def parse_and_insert_csv(file_path):
         for i, row in csvData.iterrows():
             location = deleteNonAsciiCharacters(row['location'])
             row = row.fillna('')
-            created_at = parser.parse(row['created_at'])
-            created_at_datetime = datetime.fromtimestamp(created_at.timestamp())
-            row['created_at'] = created_at_datetime.strftime('%Y-%m-%d %H:%M:%S')
+            created_at = row['created_at']
+
+            # Menggunakan dateutil.parser.parse() untuk mem-parse created_at_str
+            try:
+                # created_at_obj = date_parser.parse(created_at)
+                created_at_obj = datetime.strptime(created_at, "%a %b %d %H:%M:%S %z %Y")
+            except ValueError:
+                print("Tidak dapat mem-parse created_at:", created_at)
+                # Lewati baris ini dan lanjutkan ke baris berikutnya
+                continue
+
+            # created_at_datetime = datetime.fromtimestamp(created_at.timestamp())
+            # row['created_at'] = created_at_datetime.strftime('%Y-%m-%d %H:%M:%S')
 
             sql = """INSERT INTO guru (
                 conversation_id_str, created_at, favorite_count, full_text, id_str,
@@ -120,7 +140,7 @@ def parse_and_insert_csv(file_path):
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
 
             values = (
-                row['conversation_id_str'], row['created_at'], row['favorite_count'], row['full_text'], row['id_str'],
+                row['conversation_id_str'], created_at_obj, row['favorite_count'], row['full_text'], row['id_str'],
                 row['image_url'], row['in_reply_to_screen_name'], row['lang'], location, row['quote_count'],
                 row['reply_count'], row['retweet_count'], row['tweet_url'], row['user_id_str'], row['username']
             )
@@ -213,8 +233,10 @@ def uploadPreprocessing():
         if 'full_text' not in df.columns:
             return "Column 'full_text' not found in the CSV file", 400
 
+        # Drop duplikasi dan nilai kosong
         df = df.drop_duplicates(subset=['full_text'])
         df = df.dropna(subset=['full_text'])
+
         df = df[['full_text', 'username', 'created_at', 'tweet_url']]
         
         # Preprocessing
@@ -223,10 +245,17 @@ def uploadPreprocessing():
         # reset index dataframe
         df.reset_index(drop=True, inplace=True)
 
+        # Mengubah format created_at menjadi datetime
+        df['created_at'] = pd.to_datetime(df['created_at'], format='%a %b %d %H:%M:%S %z %Y').dt.strftime('%Y-%m-%d %H:%M:%S')
+
         # Insert data to database
         try:
             cur = mysql.connection.cursor()
-            cur.execute("CREATE TABLE IF NOT EXISTS preprocess_guru (id INT PRIMARY KEY AUTO_INCREMENT, full_text TEXT, username TEXT, created_at TEXT, tweet_url TEXT)")
+
+            # Editor: Nabil (17/05/2024)
+            # cur.execute("CREATE TABLE IF NOT EXISTS preprocess_guru (id INT PRIMARY KEY AUTO_INCREMENT, full_text TEXT, username TEXT, created_at TEXT, tweet_url TEXT)")
+            cur.execute("CREATE TABLE IF NOT EXISTS preprocess_guru (id INT PRIMARY KEY AUTO_INCREMENT, full_text TEXT, username VARCHAR(255), created_at DATETIME , tweet_url VARCHAR(255))")
+
             mysql.connection.commit()
 
             for index, row in df.iterrows():
@@ -247,16 +276,23 @@ def uploadPreprocessing():
 def preprocess_text(text):
     # Clear Twitter text
     text = clear_twitter_text(text)
+
     # Normalisasi
     text = normalisasi(text)
-    # Stopword removal
+
+    # Stopword
     text = stopword(text)
-    # Tokenization
+
+    # Tokenized
+    # tokens = tokenized(text)
     # text = " ".join(tokenized(text))
-    text = tokenized(text)
+    text_cleaning = tokenized(text)
+
     # Stemming
-    text = stemming(text)
-    return text
+    # text = stemming(tokens)
+    # return text
+    stemming_text = stemming(text_cleaning)
+    return stemming_text
 
 # Route Menampilkan hasil dari preprocessing
 @main.route('/show-preprocessing', methods=['GET'])
@@ -368,11 +404,18 @@ def AllTraining():
     return render_template('data-training.html', data=data, current_url=request.path, username=username)
 
 # Route training model
-@main.route('/training_model', methods=['POST'])
+@main.route('/training-model', methods=['GET','POST'])
 def trainModel():
+    if 'username' not in session:
+        return redirect(url_for('auth.login'))
+
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM data_training")
     training_data = cur.fetchall()
+
+    # Mengubah tuple menjadi dictionary
+    column_names = [column[0] for column in cur.description]
+    training_data = [dict(zip(column_names, row)) for row in training_data]
 
     # Mengambil full_text dan category dari data training 
     texts = [data['full_text'] for data in training_data]
@@ -393,9 +436,11 @@ def trainModel():
     joblib.dump(vectorizer, 'vectorizer.pkl')
     joblib.dump(encoder, 'encoder.pkl')
 
+    username = session['username']
+
     cur.close()
     # return jsonify({'message': 'Model berhasil dilatih'})
-    return render_template('training-model.html')
+    return render_template('train-model.html', username=username)
 
 # Route membuat tabel data testing
 @main.route('/data-testing')
@@ -434,24 +479,26 @@ def AllTesting():
     username = session['username']
     return render_template('data-testing.html', data=data, current_url=request.path, username=username)
 
-
 # Route testing model
-# Route training model
-@main.route('/testing_model', methods=['POST'])
+@main.route('/testing-model', methods=['GET','POST'])
 def testingModel():
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM data_testing")
     testing_data = cur.fetchall()
 
+    # Mengubah tuple menjadi dictionary
+    column_names = [column[0] for column in cur.description]
+    testing_data = [dict(zip(column_names, row)) for row in testing_data]
+
     # Mengambil full_text dan category dari data training 
     texts = [data['full_text'] for data in testing_data]
-    labels = [data['category'] for data in testing_data]
+    labels = [data['categories'] for data in testing_data]
 
     # Preprocessing data
     vectorizer = joblib.load('vectorizer.pkl')
-    X_test = vectorizer.fit_transform(texts)
+    X_test = vectorizer.transform(texts)
     encoder = joblib.load('encoder.pkl')
-    y_test = encoder.fit_transform(labels)
+    y_test = encoder.transform(labels)
 
     # testing model
     model = joblib.load('model.pkl')
@@ -463,9 +510,9 @@ def testingModel():
     accuracy = accuracy_score(y_test, y_pred)
 
     cur.close()
-    return render_template('testing-model.html', accuracy=accuracy)
-    # return jsonify({'accuracy': accuracy})
- 
+    # return render_template('train-model.html', accuracy=accuracy)
+    return jsonify({'accuracy': accuracy})
+
 
 # Labeling menggunakan kamus
 data = pd.read_csv('dataset/training_data_belum_dilabeling.csv')
