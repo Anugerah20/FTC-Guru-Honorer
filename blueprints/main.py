@@ -440,7 +440,7 @@ def trainModel():
 
     cur.close()
     # return jsonify({'message': 'Model berhasil dilatih'})
-    return render_template('train-model.html', current_url=request.path ,username=username)
+    return render_template('train-test.html', current_url=request.path ,username=username)
 
 # Route membuat tabel data testing
 @main.route('/data-testing')
