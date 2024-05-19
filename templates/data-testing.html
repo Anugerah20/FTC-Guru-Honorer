@@ -3,9 +3,10 @@
 {% block title %}Data Testing{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
+<!-- <div class="container mt-5">
      <div class="table-responsive-sm table-responsive-md">
           <h2 class="mb-3">Data Testing</h2>
+          <p>Total Data Testing: {{total_data}}</p>
           <table class="table table-bordered table-striped">
                <thead>
                     <tr>
@@ -24,6 +25,42 @@
                     {% endfor %}
                </tbody>
           </table>
+     </div>
+</div> -->
+
+<!-- New UPDATE -->
+<div class="container mt-5">
+     <div class="table-responsive-sm table-responsive-md">
+          <h2 class="mb-3">Data Testing</h2>
+          <form action="/test-label" method="post" enctype="multipart/form-data">
+               <div class="col-md-6 col-sm-6">
+                    <label for="file" class="form-label">Upload CSV File</label>
+                    <input type="file" class="form-control" id="file" name="file" accept=".csv" required>
+                    <button type="submit" class="btn btn-dark my-3">Upload</button>
+               </div>
+          </form>
+          <!-- <p>Total Data Testing: {{total_data}}</p> -->
+
+          {% if labeled_data %}
+          <table class="table table-bordered table-responsive-md table-responsive-sm">
+               <thead>
+                    <tr>
+                         <th>Full Text</th>
+                         <th>Categories</th>
+                    </tr>
+               </thead>
+               <tbody>
+                    {% for item in labeled_data %}
+                    <tr>
+                         <td>{{ item.full_text }}</td>
+                         <td><strong>{{ item.categories }}</strong></td>
+                    </tr>
+                    {% endfor %}
+               </tbody>
+          </table>
+          {% else %}
+          <p>No data available</p>
+          {% endif %}
      </div>
 </div>
 {% endblock %}
