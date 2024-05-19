@@ -15,6 +15,7 @@
                </div>
           </form>
 
+          <p>Total Data: {{total_data}}</p>
           <table class="table table-bordered table-striped">
                <thead>
                     <tr>
@@ -22,15 +23,17 @@
                          <th>Username</th>
                          <th>Full Text</th>
                          <th>Created At</th>
+                         <th>Tweet URL</th>
                     </tr>
                </thead>
                <tbody>
                     {% for row in data %}
                     <tr>
-                         <td>{{ row[0] }}</td>
-                         <td>{{ row[15] }}</td>
-                         <td>{{ row[4] }}</td>
-                         <td>{{ row[2] }}</td>
+                         <td>{{ row.id }}</td>
+                         <td>{{ row.username }}</td>
+                         <td>{{ row.full_text }}</td>
+                         <td>{{ row.created_at }}</td>
+                         <td>{{ row.tweet_url }}</td>
                     </tr>
                     {% endfor %}
                </tbody>
