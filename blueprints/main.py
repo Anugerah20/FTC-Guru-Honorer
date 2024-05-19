@@ -2,7 +2,8 @@
 from flask import Blueprint, flash, render_template, request, redirect, url_for, session, jsonify
 import pandas as pd
 from sqlalchemy import create_engine
-from extensions import mysql
+from extensions import mysql, db
+from models import Guru, PreprocessGuru, DataTraining, DataTesting
 from flask import current_app as app
 from dateutil import parser as date_parser
 from datetime import datetime
@@ -20,10 +21,8 @@ import os
 
 # data uji dan data latih
 from sklearn.feature_extraction.text import CountVectorizer
-# from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score
-# from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import LabelEncoder
 import joblib
 
@@ -130,25 +129,26 @@ def parse_and_insert_csv(file_path):
                 # Lewati baris ini dan lanjutkan ke baris berikutnya
                 continue
 
-            # created_at_datetime = datetime.fromtimestamp(created_at.timestamp())
-            # row['created_at'] = created_at_datetime.strftime('%Y-%m-%d %H:%M:%S')
-
-            sql = """INSERT INTO guru (
-                conversation_id_str, created_at, favorite_count, full_text, id_str,
-                image_url, in_reply_to_screen_name, lang, location, quote_count,
-                reply_count, retweet_count, tweet_url, user_id_str, username
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-
-            values = (
-                row['conversation_id_str'], created_at_obj, row['favorite_count'], row['full_text'], row['id_str'],
-                row['image_url'], row['in_reply_to_screen_name'], row['lang'], location, row['quote_count'],
-                row['reply_count'], row['retweet_count'], row['tweet_url'], row['user_id_str'], row['username']
+            guru = Guru(
+                conversation_id_str=row['conversation_id_str'],
+                created_at=created_at_obj,
+                favorite_count=row['favorite_count'],
+                full_text=row['full_text'],
+                id_str=row['id_str'],
+                image_url=row['image_url'],
+                in_reply_to_screen_name=row['in_reply_to_screen_name'],
+                lang=row['lang'],
+                location=location,
+                quote_count=row['quote_count'],
+                reply_count=row['reply_count'],
+                retweet_count=row['retweet_count'],
+                tweet_url=row['tweet_url'],
+                user_id_str=row['user_id_str'],
+                username=row['username']
             )
 
-            cur = mysql.connection.cursor()
-            cur.execute(sql, values)
-            mysql.connection.commit()
-            cur.close()
+            db.session.add(guru)
+        db.session.commit()
 
     except Exception as e:
         print("Error parsing and inserting CSV:", str(e))
@@ -165,51 +165,11 @@ def showGuru():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
     
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM guru")
-    data = cur.fetchall()
-    cur.close()
-
+    data = Guru.query.all()
+    # Menghitung total data
+    total_data = len(data)
     username = session['username']
-    return render_template('tweetGuru.html', data=data, current_url=request.path, username=username)
-
-# Route upload Preprocessing CSV dan simpan ke database mysql
-# @main.route('/upload-preprocessing', methods=['GET', 'POST'])
-# def uploadPreprocessing():
-#     if 'file' not in request.files:
-#         return redirect(request.url)
-#     file = request.files['file']
-#     if file.filename == '':
-#         return redirect(request.url)
-#     if file:
-#         filename = secure_filename(file.filename)
-#         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-#         file.save(filepath)
-
-#         df = pd.read_csv(filepath)
-#         df = df.drop_duplicates(subset=['full_text']).dropna(subset=['full_text'])
-        # df = df.dropna(subset=['full_text'])
-        # df = df[['full_text', 'username', 'created_at', 'tweet_url']]
-        # df['full_text'] = df['full_text'].apply(clear_twitter_text)
-        # df['full_text'] = df['full_text'].apply(normalisasi)
-        # df['full_text'] = df['full_text'].apply(stopword)
-        # df['full_text'] = df['full_text'].apply(tokenized)
-
-        # reset index dataframe
-        # df.reset_index(drop=True, inplace=True)
-
-        # cur = mysql.connection.cursor()
-        # cur.execute("CREATE TABLE IF NOT EXISTS preprocess_guru (id INT PRIMARY KEY AUTO_INCREMENT, full_text TEXT, username TEXT, created_at TEXT, tweet_url TEXT)")
-        # mysql.connection.commit()
-        # cur.close()
-
-        # for index, row in df.iterrows():
-        #     cur = mysql.connection.cursor()
-        #     cur.execute("INSERT INTO preprocess_guru (full_text, username, created_at, tweet_url) VALUES (%s, %s, %s, %s)", (row['full_text'], row['username'], row['created_at'], row['tweet_url']))
-        #     mysql.connection.commit()
-        #     cur.close()
-        
-        # return render_template('preprocessing.html')
+    return render_template('tweetGuru.html', data=data, total_data=total_data, current_url=request.path, username=username)
 
 # Route upload Preprocessing CSV dan simpan ke database mysql
 @main.route('/upload-preprocessing', methods=['GET', 'POST'])
@@ -250,23 +210,19 @@ def uploadPreprocessing():
 
         # Insert data to database
         try:
-            cur = mysql.connection.cursor()
-
-            # Editor: Nabil (17/05/2024)
-            # cur.execute("CREATE TABLE IF NOT EXISTS preprocess_guru (id INT PRIMARY KEY AUTO_INCREMENT, full_text TEXT, username TEXT, created_at TEXT, tweet_url TEXT)")
-            cur.execute("CREATE TABLE IF NOT EXISTS preprocess_guru (id INT PRIMARY KEY AUTO_INCREMENT, full_text TEXT, username VARCHAR(255), created_at DATETIME , tweet_url VARCHAR(255))")
-
-            mysql.connection.commit()
-
-            for index, row in df.iterrows():
-                cur.execute("INSERT INTO preprocess_guru (full_text, username, created_at, tweet_url) VALUES (%s, %s, %s, %s)", (row['full_text'], row['username'], row['created_at'], row['tweet_url']))
-                mysql.connection.commit()
-            cur.close()
+            for _, row in df.iterrows():
+                preprocessing = PreprocessGuru(
+                    full_text=row['full_text'],
+                    username=row['username'],
+                    created_at=datetime.strptime(row['created_at'], '%Y-%m-%d %H:%M:%S'),
+                    tweet_url=row['tweet_url']
+                )
+                db.session.add(preprocessing)
+            db.session.commit()
 
             # Pesan berhasil preprocessing
             flash('File berhasil di preprocessing', 'success')
             return redirect(url_for('main.AllPreprocessing'))
-        
         
         except Exception as e:
             print("Error:", str(e))
@@ -276,18 +232,14 @@ def uploadPreprocessing():
 def preprocess_text(text):
     # Clear Twitter text
     text = clear_twitter_text(text)
-
     # Normalisasi
     text = normalisasi(text)
-
     # Stopword
     text = stopword(text)
-
     # Tokenized
     # tokens = tokenized(text)
     # text = " ".join(tokenized(text))
     text_cleaning = tokenized(text)
-
     # Stemming
     # text = stemming(tokens)
     # return text
@@ -300,93 +252,32 @@ def AllPreprocessing():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
     
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM preprocess_guru")
-    data = cur.fetchall()
-    cur.close()
+    data = PreprocessGuru.query.all()
+    # Menampilkan total data
+    total_data = len(data)
 
     username = session['username']
-    return render_template('preprocessing.html', data=data, current_url=request.path, username=username)
-
-# Route menampilkan semua tweet
-# @main.route('/all-tweet', methods=['GET'])
-# def allTweet():
-#     if 'username' not in session:
-#         return redirect(url_for('auth.login'))
-    
-#     cur = mysql.connection.cursor()
-#     cur.execute("SELECT * FROM tweet_guru")
-#     data = cur.fetchall()
-#     cur.close()
-
-#     username = session['username']
-#     return render_template('tweetGuru.html', data=data, current_url=request.path, username=username)
+    return render_template('preprocessing.html', data=data, total_data=total_data, current_url=request.path, username=username)
 
 # Route menyimpan file CSV ke Database
 @main.route('/save-csv-to-database')
 def saveCSVToDatabase():
     df = pd.read_csv('dataset/guru_honorer.csv')
-    engine = create_engine(f"mysql://{app.config['MYSQL_USER']}:{app.config['MYSQL_PASSWORD']}@{app.config['MYSQL_HOST']}/{app.config['MYSQL_DB']}")
-    df.to_sql('tweet_guru', con=engine, if_exists='replace', index=False)
+    df.to_sql('tweet_guru', con=db.engine, if_exists='replace', index=False)
     return 'File CSV berhasil disimpan ke database'
 
-# Route membuat tabel preprocessing
-@main.route('/preprocessing')
-def preprocessing():
-    cur = mysql.connection.cursor()
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS preprocessing (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        full_text TEXT,
-        tweet_id INT,
-        FOREIGN KEY (tweet_id) REFERENCES tweet_guru(id)
-    )
-    """)
-    mysql.connection.commit()
-    cur.close()
-    return 'Tabel preprocessing berhasil dibuat'
-
+# Route menyimpan file CSV preprocessing ke database
 @main.route('/csv-preprocessing')
 def preprocessingCSV():
     df = pd.read_csv('dataset/hasil_preprocesing_guru_2.csv')
-    engine = create_engine(f"mysql://{app.config['MYSQL_USER']}:{app.config['MYSQL_PASSWORD']}@{app.config['MYSQL_HOST']}/{app.config['MYSQL_DB']}")
-    df.to_sql('preprocessing', con=engine, if_exists='append', index=False)
+    df.to_sql('preprocessing', con=db.engine, if_exists='append', index=False)
     return 'File CSV preprocessing berhasil disimpan ke database'
-
-# Route menampilkan semua data preprocessing
-# @main.route('/show-preprocessing', methods=['GET'])
-# def AllPreprocessing():
-#     if 'username' not in session:
-#         return redirect(url_for('auth.login'))
-    
-#     cur = mysql.connection.cursor()
-#     cur.execute("SELECT * FROM preprocessing")
-#     data = cur.fetchall()
-#     cur.close()
-#     username = session['username']
-#     return render_template('preprocessing.html', data=data, current_url=request.path, username=username)
-
-# Route membuat tabel data training
-@main.route('/data-training')
-def training():
-    cur = mysql.connection.cursor()
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS data_training (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        full_text TEXT,
-        category VARCHAR(50) NOT NULL
-    )
-    """)
-    mysql.connection.commit()
-    cur.close()
-    return 'Tabel data training berhasil dibuat'
 
 # Route data training menyimpan file CSV ke database
 @main.route('/data-training-csv')
 def DataTraining():
     df = pd.read_csv('dataset/data_training_guru_honorer.csv')
-    engine = create_engine(f"mysql://{app.config['MYSQL_USER']}:{app.config['MYSQL_PASSWORD']}@{app.config['MYSQL_HOST']}/{app.config['MYSQL_DB']}")
-    df.to_sql('data_training', con=engine, if_exists='append', index=False)
+    df.to_sql('data_training', con=db.engine, if_exists='append', index=False)
     return 'File CSV data training berhasil disimpan ke database'
 
 # Route menampilkan data training
@@ -395,13 +286,12 @@ def AllTraining():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
     
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM data_training")
-    data = cur.fetchall()
-    cur.close()
+    data = DataTraining.query.all()
+    # Menampilkan total data
+    total_data = len(data)
 
     username = session['username']
-    return render_template('data-training.html', data=data, current_url=request.path, username=username)
+    return render_template('data-training.html', data=data, total_data=total_data, username=username)
 
 # Route training model
 @main.route('/training-model', methods=['GET','POST'])
@@ -409,17 +299,11 @@ def trainModel():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
 
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM data_training")
-    training_data = cur.fetchall()
-
-    # Mengubah tuple menjadi dictionary
-    column_names = [column[0] for column in cur.description]
-    training_data = [dict(zip(column_names, row)) for row in training_data]
+    training_data = DataTraining.query.all()
 
     # Mengambil full_text dan category dari data training 
-    texts = [data['full_text'] for data in training_data]
-    labels = [data['category'] for data in training_data]
+    texts = [data.full_text for data in training_data]
+    labels = [data.category for data in training_data]
 
     # Preprocessing data
     vectorizer = CountVectorizer()
@@ -438,31 +322,14 @@ def trainModel():
 
     username = session['username']
 
-    cur.close()
     # return jsonify({'message': 'Model berhasil dilatih'})
     return render_template('train-test.html', current_url=request.path ,username=username)
-
-# Route membuat tabel data testing
-@main.route('/data-testing')
-def testing():
-    cur = mysql.connection.cursor()
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS data_testing (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        full_text TEXT,
-        categories VARCHAR(50) NOT NULL
-    )
-    """)
-    mysql.connection.commit()
-    cur.close()
-    return 'Tabel data testing berhasil dibuat'
 
 # Route data testing menyimpan file CSV ke database
 @main.route('/data-testing-csv')
 def DataTesting():
     df = pd.read_csv('dataset/data_testing_guru_honorer.csv')
-    engine = create_engine(f"mysql://{app.config['MYSQL_USER']}:{app.config['MYSQL_PASSWORD']}@{app.config['MYSQL_HOST']}/{app.config['MYSQL_DB']}")
-    df.to_sql('data_testing', con=engine, if_exists='append', index=False)
+    df.to_sql('data_testing', con=db.engine, if_exists='append', index=False)
     return 'File CSV data testing berhasil disimpan ke database'
 
 # Route menampilkan data testing
@@ -471,28 +338,21 @@ def AllTesting():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
     
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM data_testing")
-    data = cur.fetchall()
-    cur.close()
+    data = DataTesting.query.all()
+    # Menampilkan total data training
+    total_data = len(data)
 
     username = session['username']
-    return render_template('data-testing.html', data=data, current_url=request.path, username=username)
+    return render_template('data-testing.html', data=data, total_data=total_data, username=username)
 
 # Route testing model
 @main.route('/testing-model', methods=['GET','POST'])
 def testingModel():
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM data_testing")
-    testing_data = cur.fetchall()
-
-    # Mengubah tuple menjadi dictionary
-    column_names = [column[0] for column in cur.description]
-    testing_data = [dict(zip(column_names, row)) for row in testing_data]
+    testing_data = DataTesting.query.all()
 
     # Mengambil full_text dan category dari data training 
-    texts = [data['full_text'] for data in testing_data]
-    labels = [data['categories'] for data in testing_data]
+    texts = [data.full_text for data in testing_data]
+    labels = [data.categories for data in testing_data]
 
     # Preprocessing data
     vectorizer = joblib.load('vectorizer.pkl')
@@ -502,14 +362,11 @@ def testingModel():
 
     # testing model
     model = joblib.load('model.pkl')
-
     # Prediksi
     y_pred = model.predict(X_test)
-
     # Evaluasi model
     accuracy = accuracy_score(y_test, y_pred)
 
-    cur.close()
     # return render_template('train-model.html', accuracy=accuracy)
     return jsonify({'accuracy': accuracy})
 
