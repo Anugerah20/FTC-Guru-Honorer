@@ -1,14 +1,13 @@
 # blueprints/auth.py
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from extensions import mysql
+from extensions import db
+from models import User
 
 auth = Blueprint('auth', __name__)
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     if 'username' in session:
-        # Editor: Nabil (16/05/2024)
-        # return redirect(url_for('main.allTweet'))
 
         return redirect(url_for('main.showGuru'))
 
@@ -20,17 +19,11 @@ def login():
             flash('Email dan password tidak boleh kosong', 'danger')
             return redirect(url_for('auth.login'))
 
-        cur = mysql.connection.cursor()
-        cur.execute("SELECT username, password FROM users WHERE username = %s", (username,))
-        user = cur.fetchone()
-        cur.close()
+        user = User.query.filter_by(username=username).first()
 
-        if user and pwd == user[1]:
-            session['username'] = user[0]
+        if user and pwd == user.password:
+            session['username'] = user.username
             flash('Login berhasil', 'success')
-
-            # Editor: Nabil (16/05/2024)
-            # return redirect(url_for('main.allTweet'))
             
             return redirect(url_for('main.showGuru'))
         else:
@@ -43,8 +36,6 @@ def login():
 def register():
     if 'username' in session:
 
-        # Editor: Nabil (16/05/2024)
-        # return redirect(url_for('main.allTweet'))
         return redirect(url_for('main.showGuru'))
 
     if request.method == 'POST':
@@ -56,10 +47,9 @@ def register():
             flash('Username, email dan password tidak boleh kosong', 'danger')
             return redirect(url_for('auth.register'))
 
-        cur = mysql.connection.cursor()
-        cur.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)", (username, email, pwd))
-        mysql.connection.commit()
-        cur.close()
+        new_user = User(username, pwd, email)
+        db.session.add(new_user)
+        db.session.commit()
 
         return redirect(url_for('auth.login'))
 
