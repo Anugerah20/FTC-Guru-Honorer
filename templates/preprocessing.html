@@ -7,6 +7,7 @@
      <div class="table-responsive-sm table-responsive-md">
           <h2 class="mb-3">Preprocessing</h2>
 
+          <p>Total Data: {{total_data}}</p>
           <form class="d-flex row g-3" method="POST" action="/upload-preprocessing" enctype="multipart/form-data">
                <div class="col-md-6 col-lg-6">
                     <label for="file" class="form-label">Unggah file csv</label>
@@ -28,11 +29,11 @@
                <tbody>
                     {% for row in data %}
                     <tr>
-                         <td>{{ row[0] }}</td>
-                         <td>{{ row[2] }}</td>
-                         <td>{{ row[1] }}</td>
-                         <td>{{ row[3] }}</td>
-                         <td>{{ row[4] }}</td>
+                         <td>{{ row.id }}</td>
+                         <td>{{ row.username }}</td>
+                         <td>{{ row.full_text }}</td>
+                         <td>{{ row.created_at }}</td>
+                         <td>{{ row.tweet_url }}</td>
                     </tr>
                     {% endfor %}
                </tbody>
