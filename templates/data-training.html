@@ -4,26 +4,37 @@
 
 {% block content %}
 <div class="container mt-5">
-     <div class="table-responsive-sm table-responsive-md">
-          <h2 class="mb-3">Data Training</h2>
-          <table class="table table-bordered table-striped">
-               <thead>
-                    <tr>
-                         <th>#</th>
-                         <th>Full Text</th>
-                         <th>Category</th>
-                    </tr>
-               </thead>
-               <tbody>
-                    {% for row in data %}
-                    <tr>
-                         <td>{{ row[0] }}</td>
-                         <td>{{ row[1] }}</td>
-                         <td>{{ row[2] }}</td>
-                    </tr>
-                    {% endfor %}
-               </tbody>
-          </table>
-     </div>
+     <h2 class="mb-4">Data Training</h2>
+
+     <!-- Form untuk mengunggah file CSV -->
+     <form id="uploadForm" class="d-flex row g-3" method="POST" action="/train-label" enctype="multipart/form-data">
+          <div class="col-md-6 col-lg-6">
+               <label for="csvFile" class="form-label">Unggah file csv</label>
+               <input type="file" class="form-control" id="csvFile" name="csvFile" accept=".csv" required>
+               <button class="btn btn-dark my-3" type="submit">upload</button>
+          </div>
+     </form>
+
+     <!-- Tempat untuk menampilkan hasil labeling -->
+     {% if labeled_data %}
+     <table class="table table-bordered">
+          <thead>
+               <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Full Text</th>
+                    <th scope="col">Category</th>
+               </tr>
+          </thead>
+          <tbody>
+               {% for item in labeled_data %}
+               <tr>
+                    <td scope="row">{{ loop.index }}</td>
+                    <td>{{ item.full_text }}</td>
+                    <td><strong>{{ item.category }}</strong></td>
+               </tr>
+               {% endfor %}
+          </tbody>
+     </table>
+     {% endif %}
 </div>
 {% endblock %}
