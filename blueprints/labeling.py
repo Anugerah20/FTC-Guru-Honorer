@@ -76,16 +76,17 @@ def training_labeling():
                 labeled_text = DataTraining(full_text=text, category=label)
                 db.session.add(labeled_text)
             db.session.commit()
-          
+
             flash('Data berhasil disimpan', 'success')
             # Ambil data dari database saat redirect
             # labeled_texts = DataTraining.query.all()
             # labeled_data = [{'full_text': text.full_text, 'category': text.category} for text in labeled_texts]
-            return render_template('data-training.html', labeled_data=labeled_data)
+            return redirect(url_for('labeling.get_data_training'))
+            # return render_template('data-training.html', labeled_data=labeled_data)
         else:
             flash('File tidak valid', 'danger')
             return redirect(request.url)
-     
+
     # Ambil data dari database saat metode adalah GET
     labeled_texts = DataTraining.query.all()
     labeled_data = [{'full_text': text.full_text, 'category': text.category} for text in labeled_texts]
@@ -96,14 +97,41 @@ def training_labeling():
 def get_data_training():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
-    
-    labeled_texts = DataTraining.query.all()
+
+    # Membuat pagination untuk data training
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    labeled_texts = DataTraining.query.paginate(page=page, per_page=per_page)
+
+    # Hitung total positif, negatif, dan netral
+    total_positif = DataTraining.query.filter_by(category='positif').count()
+    total_negatif = DataTraining.query.filter_by(category='negatif').count()
+    total_netral = DataTraining.query.filter_by(category='netral').count()
+
     result = []
     for text in labeled_texts:
         result.append({'full_text': text.full_text, 'category': text.category})
-        username = session['username']
-    # return jsonify(result)
-    return render_template('data-training.html', labeled_data=result, current_url=request.path, username=username)
+
+    total_pages = labeled_texts.pages
+    current_page = labeled_texts.page
+
+    start_page = max(1, current_page - 2)
+    end_page = min(total_pages, current_page + 2) + 1
+    pagination_range = range(start_page, end_page)
+
+    username = session['username']
+    return render_template(
+        'data-training.html',
+        labeled_data=result,
+        current_url=request.path,
+        username=username,
+        current_page=current_page,
+        total_pages=total_pages,
+        pagination_range=pagination_range,
+        total_positif=total_positif,
+        total_negatif=total_negatif,
+        total_netral=total_netral
+    )
 
 # Process Testing Data
 # Load training data
@@ -143,14 +171,14 @@ def classify_document(document):
 def index():
     if request.method == 'POST':
         file = request.files['file']
-        
+
         if file and file.filename.endswith('.csv'):
             filename = secure_filename(file.filename)
             upload_dir = os.path.join(root_dir, 'uploads')
             os.makedirs(upload_dir, exist_ok=True)
             file_path = os.path.join(upload_dir, filename)
             file.save(file_path)
-        
+
         # Process testing data and add labels
         testing_data = pd.read_csv(file_path)
         if 'full_text' not in testing_data.columns:
@@ -170,14 +198,15 @@ def index():
             db.session.add(labeled_text)
         db.session.commit()
         flash('Data berhasil disimpan', 'success')
-        
+
         # Ambil data dari database saat metode adalah GET
         labeled_texts = DataTesting.query.all()
         labeled_data = [{'full_text': text.full_text, 'categories': text.categories} for text in labeled_texts]
 
         # Render HTML with classification results
         return render_template('data-testing.html', labeled_data=labeled_data)
-    
+        # return redirect(url_for('labeling.get_data_testing'))
+
     return render_template('data-testing.html')
 
 # Route Data Testing get all data
@@ -185,11 +214,45 @@ def index():
 def get_data_testing():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
-    
-    labeled_texts = DataTesting.query.all()
+
+    # Membuat pagination untuk data testing
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    labeled_texts = DataTesting.query.paginate(page=page, per_page=per_page)
+
+    # Hitung total positif, negatif, dan netral
+    total_positif = DataTesting.query.filter_by(categories='positif').count()
+    total_negatif = DataTesting.query.filter_by(categories='negatif').count()
+    total_netral = DataTesting.query.filter_by(categories='netral').count()
+
     result = []
     for text in labeled_texts:
         result.append({'full_text': text.full_text, 'categories': text.categories})
-        username = session['username']
-    # return jsonify(result)
-    return render_template('data-testing.html', labeled_data=result, current_url=request.path, username=username)
+
+    total_pages = labeled_texts.pages
+    current_page = labeled_texts.page
+
+    start_page = max(1, current_page - 2)
+    end_page = min(total_pages, current_page + 2) + 1
+    pagination_range = range(start_page, end_page)
+
+    username = session['username']
+    return render_template(
+        'data-testing.html',
+        labeled_data=result,
+        current_url=request.path,
+        username=username,
+        current_page=current_page,
+        total_pages=total_pages,
+        pagination_range=pagination_range,
+        total_positif=total_positif,
+        total_negatif=total_negatif,
+        total_netral=total_netral
+    )
+
+    # labeled_texts = DataTesting.query.all()
+    # result = []
+    # for text in labeled_texts:
+    #     result.append({'full_text': text.full_text, 'categories': text.categories})
+    #     username = session['username']
+    # return render_template('data-testing.html', labeled_data=result, current_url=request.path, username=username)
