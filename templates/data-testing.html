@@ -3,32 +3,6 @@
 {% block title %}Data Testing{% endblock %}
 
 {% block content %}
-<!-- <div class="container mt-5">
-     <div class="table-responsive-sm table-responsive-md">
-          <h2 class="mb-3">Data Testing</h2>
-          <p>Total Data Testing: {{total_data}}</p>
-          <table class="table table-bordered table-striped">
-               <thead>
-                    <tr>
-                         <th>#</th>
-                         <th>Full Text</th>
-                         <th>Categories</th>
-                    </tr>
-               </thead>
-               <tbody>
-                    {% for row in data %}
-                    <tr>
-                         <td>{{ row[0] }}</td>
-                         <td>{{ row[1] }}</td>
-                         <td>{{ row[2] }}</td>
-                    </tr>
-                    {% endfor %}
-               </tbody>
-          </table>
-     </div>
-</div> -->
-
-<!-- New UPDATE -->
 <div class="container mt-5">
      <div class="table-responsive-sm table-responsive-md">
           <h2 class="mb-3">Data Testing</h2>
@@ -45,6 +19,7 @@
           <table class="table table-bordered table-responsive-md table-responsive-sm">
                <thead>
                     <tr>
+                         <th>#</th>
                          <th>Full Text</th>
                          <th>Categories</th>
                     </tr>
@@ -52,6 +27,7 @@
                <tbody>
                     {% for item in labeled_data %}
                     <tr>
+                         <td scope="row">{{ loop.index + (current_page - 1) * 20 }}</td>
                          <td>{{ item.full_text }}</td>
                          <td><strong>{{ item.categories }}</strong></td>
                     </tr>
@@ -62,5 +38,40 @@
           <p>No data available</p>
           {% endif %}
      </div>
+
+     <!-- Show image -->
+     <!-- <img src="{{ url_for('static', filename='images/bar_chart.png')}}" alt="bar chart" /> -->
+
+     <!-- Pagination -->
+     {% if total_pages > 1 %}
+     <nav aria-label="Page navigation example">
+          <ul class="pagination justify-content-center">
+               <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                    <a class="page-link"
+                         href="{{ url_for('labeling.get_data_testing', page=current_page-1) }}">Previous</a>
+               </li>
+               {% for p in pagination_range %}
+               <li class="page-item {% if current_page == p %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('labeling.get_data_testing', page=p) }}">{{ p }}</a>
+               </li>
+               {% endfor %}
+               <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('labeling.get_data_testing', page=current_page+1) }}">Next</a>
+               </li>
+          </ul>
+     </nav>
+     {% endif %}
+
+     <h3>Chart Data Testing</h3>
+     <!-- Hidden inputs to pass data to JavaScript -->
+     <input type="hidden" id="total_positif" value="{{ total_positif }}">
+     <input type="hidden" id="total_negatif" value="{{ total_negatif }}">
+     <input type="hidden" id="total_netral" value="{{ total_netral }}">
+
+     <!-- Display chart -->
+     <div class="mt-5">
+          <canvas id="dataChart"></canvas>
+     </div>
 </div>
+
 {% endblock %}
