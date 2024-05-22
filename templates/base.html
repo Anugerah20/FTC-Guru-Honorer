@@ -52,10 +52,12 @@
                               </li> -->
                               {% if username %}
                               <li class="nav-item">
-                                   <a href="#" class="nav-link text-decoration-none text-dark">Halo, {{ username }}</a>
+                                   <a href="#" class="nav-link text-decoration-none text-dark fw-bold">Hai, {{ username
+                                        }}</a>
                               </li>
                               <li class="nav-item">
-                                   <a class="nav-link text-bg-danger rounded ms-3 text-center" href="/logout">Logout</a>
+                                   <a class="nav-link" href="/logout"><i class="fa fa-sign-out"></i>
+                                        Keluar</a>
                               </li>
                               {% else %}
                               <li class="nav-item">
@@ -83,11 +85,9 @@
           {% endif %}
           {% endwith %}
      </div>
-     <!-- Konten halaman lainnya -->
 
      <!-- Content -->
      {% block content %}{% endblock %}
-
 
      <!-- Footer -->
      <footer>
@@ -99,6 +99,9 @@
      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
           integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
           crossorigin="anonymous"></script>
+     <!-- Chart.js script -->
+     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+     <script src="{{ url_for('static', filename='js/showChart.js') }}"></script>
 </body>
 
 </html>
