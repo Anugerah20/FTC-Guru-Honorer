@@ -7,7 +7,6 @@
      <div class="table-responsive-sm table-responsive-md">
           <h2 class="mb-3">Preprocessing</h2>
 
-          <p>Total Data: {{total_data}}</p>
           <form class="d-flex row g-3" method="POST" action="/upload-preprocessing" enctype="multipart/form-data">
                <div class="col-md-6 col-lg-6">
                     <label for="file" class="form-label">Unggah file csv</label>
@@ -15,6 +14,7 @@
                     <button class="btn btn-dark my-3" type="submit">upload</button>
                </div>
           </form>
+          <!-- <p>Total Data: {{total_data}}</p> -->
 
           <table class="table table-bordered table-striped">
                <thead>
@@ -38,6 +38,28 @@
                     {% endfor %}
                </tbody>
           </table>
+
+          <!-- Pagination -->
+          {% if total_pages > 1 %}
+          <nav aria-label="Page navigation example">
+               <ul class="pagination justify-content-center">
+                    <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                         <a class="page-link"
+                              href="{{ url_for('main.AllPreprocessing', page=current_page-1) }}">Previous</a>
+                    </li>
+                    {% for p in pagination_range %}
+                    <li class="page-item {% if current_page == p %}active{% endif %}">
+                         <a class="page-link" href="{{ url_for('main.AllPreprocessing', page=p) }}">{{ p }}</a>
+                    </li>
+                    {% endfor %}
+                    <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                         <a class="page-link"
+                              href="{{ url_for('main.AllPreprocessing', page=current_page+1) }}">Next</a>
+                    </li>
+               </ul>
+          </nav>
+          {% endif %}
+
      </div>
 </div>
 {% endblock %}
