@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from extensions import db
 from models import DataTraining, DataTesting
 from werkzeug.utils import secure_filename
@@ -119,7 +119,10 @@ def get_data_training():
     end_page = min(total_pages, current_page + 2) + 1
     pagination_range = range(start_page, end_page)
 
+    # Menghitung Total Data
+    total_data = DataTraining.query.count()
     username = session['username']
+
     return render_template(
         'data-training.html',
         labeled_data=result,
@@ -130,7 +133,8 @@ def get_data_training():
         pagination_range=pagination_range,
         total_positif=total_positif,
         total_negatif=total_negatif,
-        total_netral=total_netral
+        total_netral=total_netral,
+        total_data=total_data
     )
 
 # Process Testing Data
@@ -236,7 +240,10 @@ def get_data_testing():
     end_page = min(total_pages, current_page + 2) + 1
     pagination_range = range(start_page, end_page)
 
+    # Menghitung Total Data
+    total_data = DataTesting.query.count()
     username = session['username']
+
     return render_template(
         'data-testing.html',
         labeled_data=result,
@@ -247,7 +254,8 @@ def get_data_testing():
         pagination_range=pagination_range,
         total_positif=total_positif,
         total_negatif=total_negatif,
-        total_netral=total_netral
+        total_netral=total_netral,
+        total_data=total_data
     )
 
     # labeled_texts = DataTesting.query.all()
