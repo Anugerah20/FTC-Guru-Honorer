@@ -38,6 +38,26 @@
                     {% endfor %}
                </tbody>
           </table>
+
+          <!-- Pagination -->
+          {% if total_pages > 1 %}
+          <nav aria-label="Page navigation example">
+               <ul class="pagination justify-content-center">
+                    <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                         <a class="page-link" href="{{ url_for('main.showGuru', page=current_page-1) }}">Previous</a>
+                    </li>
+                    {% for p in pagination_range %}
+                    <li class="page-item {% if current_page == p %}active{% endif %}">
+                         <a class="page-link" href="{{ url_for('main.showGuru', page=p) }}">{{ p }}</a>
+                    </li>
+                    {% endfor %}
+                    <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                         <a class="page-link" href="{{ url_for('main.showGuru', page=current_page+1) }}">Next</a>
+                    </li>
+               </ul>
+          </nav>
+          {% endif %}
+
      </div>
 </div>
 {% endblock %}
