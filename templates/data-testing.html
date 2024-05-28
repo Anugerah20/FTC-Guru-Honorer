@@ -13,7 +13,7 @@
                     <button type="submit" class="btn btn-dark my-3">Upload</button>
                </div>
           </form>
-          <!-- <p>Total Data Testing: {{total_data}}</p> -->
+          <p>Total Data Testing: {{total_data}}</p>
 
           {% if labeled_data %}
           <table class="table table-bordered table-responsive-md table-responsive-sm">
@@ -38,9 +38,6 @@
           <p>No data available</p>
           {% endif %}
      </div>
-
-     <!-- Show image -->
-     <!-- <img src="{{ url_for('static', filename='images/bar_chart.png')}}" alt="bar chart" /> -->
 
      <!-- Pagination -->
      {% if total_pages > 1 %}
