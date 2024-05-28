@@ -47,7 +47,7 @@ main = Blueprint('main', __name__)
 #           parseCSV(file_path)
 
 #           return redirect(url_for('home'))
-     
+
 # def parseCSV(file_path):
 #     col_names = [
 #         'conversation_id_str'
@@ -126,8 +126,12 @@ def parse_and_insert_csv(file_path):
                 created_at_obj = datetime.strptime(created_at, "%a %b %d %H:%M:%S %z %Y")
             except ValueError:
                 print("Tidak dapat mem-parse created_at:", created_at)
-                # Lewati baris ini dan lanjutkan ke baris berikutnya
                 continue
+
+            # Cek apakah data sudah ada berdasarkan id_str
+            # existing_guru = Guru.query.filter_by(id_str=row['id_str']).first()
+            # if (existing_guru):
+            #     continue
 
             guru = Guru(
                 conversation_id_str=row['conversation_id_str'],
@@ -155,21 +159,41 @@ def parse_and_insert_csv(file_path):
 
 def deleteNonAsciiCharacters(text):
     if isinstance(text, float) and pd.isna(text):
-        return 
+        return
     else:
         return ''.join(char for char in text if ord(char) < 128)
 
-# Route menampilkan semua data guru
 @main.route('/show-guru', methods=['GET'])
 def showGuru():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
-    
-    data = Guru.query.all()
+
+    # Membuat pagination
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    paginated_data = Guru.query.paginate(page=page, per_page=per_page)
+
+    total_pages = paginated_data.pages
+    current_page = paginated_data.page
+
+    start_page = max(1, current_page - 2)
+    end_page = min(total_pages, current_page + 2) + 1
+    pagination_range = range(start_page, end_page)
+
     # Menghitung total data
-    total_data = len(data)
+    total_data = Guru.query.count()
     username = session['username']
-    return render_template('tweetGuru.html', data=data, total_data=total_data, current_url=request.path, username=username)
+
+    return render_template(
+        'tweetGuru.html',
+        data=paginated_data.items,
+        total_data=total_data,
+        current_url=request.path,
+        username=username,
+        current_page=current_page,
+        total_pages=total_pages,
+        pagination_range=pagination_range,
+    )
 
 # Route upload Preprocessing CSV dan simpan ke database mysql
 @main.route('/upload-preprocessing', methods=['GET', 'POST'])
@@ -198,7 +222,7 @@ def uploadPreprocessing():
         df = df.dropna(subset=['full_text'])
 
         df = df[['full_text', 'username', 'created_at', 'tweet_url']]
-        
+
         # Preprocessing
         df['full_text'] = df['full_text'].apply(preprocess_text)
 
@@ -223,7 +247,7 @@ def uploadPreprocessing():
             # Pesan berhasil preprocessing
             flash('File berhasil di preprocessing', 'success')
             return redirect(url_for('main.AllPreprocessing'))
-        
+
         except Exception as e:
             print("Error:", str(e))
             flash('Terjadi kesalahan saat preprocessing', 'danger')
@@ -251,13 +275,33 @@ def preprocess_text(text):
 def AllPreprocessing():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
-    
-    data = PreprocessGuru.query.all()
-    # Menampilkan total data
-    total_data = len(data)
 
+    # Membuat pagination
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    paginated_data = PreprocessGuru.query.paginate(page=page, per_page=per_page)
+
+    total_pages = paginated_data.pages
+    current_page = paginated_data.page
+
+    start_page = max(1, current_page - 2)
+    end_page = min(total_pages, current_page + 2) + 1
+    pagination_range = range(start_page, end_page)
+
+    # Menampilkan total data
+    # total_data = PreprocessGuru.query.count()
     username = session['username']
-    return render_template('preprocessing.html', data=data, total_data=total_data, current_url=request.path, username=username)
+
+    return render_template(
+        'preprocessing.html',
+        data=paginated_data.items,
+        # total_data=total_data,
+        current_url=request.path,
+        username=username,
+        current_page=current_page,
+        total_pages=total_pages,
+        pagination_range=pagination_range,
+        )
 
 # Route menyimpan file CSV ke Database
 @main.route('/save-csv-to-database')
@@ -285,7 +329,7 @@ def DataTraining():
 def AllTraining():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
-    
+
     data = DataTraining.query.all()
     # Menampilkan total data
     total_data = len(data)
@@ -301,7 +345,7 @@ def trainModel():
 
     training_data = DataTraining.query.all()
 
-    # Mengambil full_text dan category dari data training 
+    # Mengambil full_text dan category dari data training
     texts = [data.full_text for data in training_data]
     labels = [data.category for data in training_data]
 
@@ -337,7 +381,7 @@ def DataTesting():
 def AllTesting():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
-    
+
     data = DataTesting.query.all()
     # Menampilkan total data training
     total_data = len(data)
@@ -350,7 +394,7 @@ def AllTesting():
 def testingModel():
     testing_data = DataTesting.query.all()
 
-    # Mengambil full_text dan category dari data training 
+    # Mengambil full_text dan category dari data training
     texts = [data.full_text for data in testing_data]
     labels = [data.categories for data in testing_data]
 
@@ -372,33 +416,33 @@ def testingModel():
 
 
 # Labeling menggunakan kamus
-data = pd.read_csv('dataset/training_data_belum_dilabeling.csv')
+# data = pd.read_csv('dataset/training_data_belum_dilabeling.csv')
 
-# Membaca kamus lexicon positif dan negatif
-with open('dataset/kamus_negatif.txt', 'r') as file:
-    positive_words = file.read().splitlines()
+# # Membaca kamus lexicon positif dan negatif
+# with open('dataset/kamus_negatif.txt', 'r') as file:
+#     positive_words = file.read().splitlines()
 
-with open('dataset/kamus_positif.txt', 'r') as file:
-    negative_words = file.read().splitlines()
+# with open('dataset/kamus_positif.txt', 'r') as file:
+#     negative_words = file.read().splitlines()
 
 # Fungsi untuk menentukan kategori kalimat
-def categorize_sentence(sentence):
-    positive_count = sum(1 for word in sentence.split() if word in positive_words)
-    negative_count = sum(1 for word in sentence.split() if word in negative_words)
+# def categorize_sentence(sentence):
+#     positive_count = sum(1 for word in sentence.split() if word in positive_words)
+#     negative_count = sum(1 for word in sentence.split() if word in negative_words)
 
-    if positive_count > negative_count:
-        return 'Positif'
-    elif positive_count < negative_count:
-        return 'Negatif'
-    else:
-        return 'Netral'
-    
-@main.route('/kamus-training', methods=['GET', 'POST'])
-def labeling_kamus():
-    if request.method == 'POST':
-        sentence = request.form['sentence']
-        category = categorize_sentence(sentence)  # Call the function
-        return render_template('kamus-training.html', sentence=sentence, category=category)
-    else:
-        return render_template('kamus-training.html')
+#     if positive_count > negative_count:
+#         return 'Positif'
+#     elif positive_count < negative_count:
+#         return 'Negatif'
+#     else:
+#         return 'Netral'
+
+# @main.route('/kamus-training', methods=['GET', 'POST'])
+# def labeling_kamus():
+#     if request.method == 'POST':
+#         sentence = request.form['sentence']
+#         category = categorize_sentence(sentence)  # Call the function
+#         return render_template('kamus-training.html', sentence=sentence, category=category)
+#     else:
+#         return render_template('kamus-training.html')
 
