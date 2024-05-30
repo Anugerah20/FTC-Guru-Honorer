@@ -77,9 +77,12 @@ main = Blueprint('main', __name__)
 #         mycursor.execute(sql,value)
 #         mysql.connection.commit()
 
-# Route index
+# Blueprint adalah memisahkan beberapa bagian seperti route dan fungsi
+# main.route yang ada di def index merupakan route untuk menampilkan halaman utama
 @main.route('/')
 def index():
+    # redirect itu akan kehalaman yang dituju
+    # url_for akan membuat url showGuru dari main
     return redirect(url_for('main.showGuru'))
 
 # Route upload file CSV dan simpan ke database
