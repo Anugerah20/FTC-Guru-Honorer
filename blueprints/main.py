@@ -1,12 +1,16 @@
 # blueprints/main.py
 from flask import Blueprint, flash, render_template, request, redirect, url_for, session, jsonify
 import pandas as pd
-from sqlalchemy import create_engine
+# from sqlalchemy import create_engine
 from extensions import mysql, db
 from models import Guru, PreprocessGuru, DataTraining, DataTesting
 from flask import current_app as app
 from dateutil import parser as date_parser
 from datetime import datetime
+
+# Nabil (30/05/2024)
+# Import dialect mysql dari sqlalchemy
+# from sqlalchemy.dialects import mysql
 
 # Import fungsi preprocessing
 from clear_twitter_text import clear_twitter_text
@@ -160,14 +164,17 @@ def parse_and_insert_csv(file_path):
     except Exception as e:
         print("Error parsing and inserting CSV:", str(e))
 
+# Menghapus simbol-simbol yang ada di text, lokasi
 def deleteNonAsciiCharacters(text):
     if isinstance(text, float) and pd.isna(text):
         return
     else:
         return ''.join(char for char in text if ord(char) < 128)
 
+# Route untuk menampilkan semua data yang ada di database
 @main.route('/show-guru', methods=['GET'])
 def showGuru():
+    # Kondisi untuk mengecek user sudah login atau belum
     if 'username' not in session:
         return redirect(url_for('auth.login'))
 
@@ -175,6 +182,10 @@ def showGuru():
     page = request.args.get('page', 1, type=int)
     per_page = 20
     paginated_data = Guru.query.paginate(page=page, per_page=per_page)
+
+    # Melakukan debugging query mysql
+    # Nabil (30/05/2024)
+    # print(str(paginated_data.query.statement.compile(dialect=mysql.dialect())), flush=True)
 
     total_pages = paginated_data.pages
     current_page = paginated_data.page
