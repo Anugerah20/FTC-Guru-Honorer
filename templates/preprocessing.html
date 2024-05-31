@@ -29,37 +29,21 @@
                <tbody>
                     {% for row in data %}
                     <tr>
-                         <td>{{ row.id }}</td>
-                         <td>{{ row.username }}</td>
-                         <td>{{ row.full_text }}</td>
-                         <td>{{ row.created_at }}</td>
-                         <td>{{ row.tweet_url }}</td>
+                         <td>{{ row[0] }}</td>
+                         <td>{{ row[1] }}</td>
+                         <td>{{ row[2] }}</td>
+                         <td>{{ row[3] }}</td>
+                         <td>{{ row[4] }}</td>
                     </tr>
                     {% endfor %}
                </tbody>
           </table>
-
           <!-- Pagination -->
-          {% if total_pages > 1 %}
+          {% if pagination.total_pages > 1 %}
           <nav aria-label="Page navigation example">
-               <ul class="pagination justify-content-center">
-                    <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
-                         <a class="page-link"
-                              href="{{ url_for('main.AllPreprocessing', page=current_page-1) }}">Previous</a>
-                    </li>
-                    {% for p in pagination_range %}
-                    <li class="page-item {% if current_page == p %}active{% endif %}">
-                         <a class="page-link" href="{{ url_for('main.AllPreprocessing', page=p) }}">{{ p }}</a>
-                    </li>
-                    {% endfor %}
-                    <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
-                         <a class="page-link"
-                              href="{{ url_for('main.AllPreprocessing', page=current_page+1) }}">Next</a>
-                    </li>
-               </ul>
+               {{ pagination.links }}
           </nav>
           {% endif %}
-
      </div>
 </div>
 {% endblock %}
