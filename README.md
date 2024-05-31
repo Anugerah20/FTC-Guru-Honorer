@@ -6,8 +6,9 @@
 - deactivate
 
 # INFO!
-A. di branch dev-nabil Mysql + SQLAlchemy + ORM (Tidak ada perintah kode SQL dikodingannya)
-B. di branch mysql-dev (Ada perinth kode SQL dikodingannya)
+-  Di branch dev-nabil Mysql + SQLAlchemy + ORM (Tidak ada perintah kode SQL dikodingannya)
+-  Pada branch mysql-dev (Ada perinth kode SQL dikodingannya)
+  
 ## API
 1. Save file CSV to database mysql
    - http://127.0.0.1:5000/save-csv-to-database (Belum update)
