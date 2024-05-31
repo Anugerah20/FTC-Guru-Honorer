@@ -23,7 +23,7 @@ db.init_app(app)
 # Flask Migrate SQLAlchemy
 migrate = Migrate(app, db, compare_type=True)
 
-# Register blueprint
+# daftar blueprint agar lebih mudah dibaca
 app.register_blueprint(auth)
 app.register_blueprint(main)
 app.register_blueprint(labeling, app=app)
