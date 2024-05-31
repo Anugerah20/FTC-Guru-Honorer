@@ -1,12 +1,15 @@
 # blueprints/main.py
+import math
 from flask import Blueprint, flash, render_template, request, redirect, url_for, session, jsonify
 import pandas as pd
 # from sqlalchemy import create_engine
 from extensions import mysql, db
-from models import Guru, PreprocessGuru, DataTraining, DataTesting
+from models import PreprocessGuru, DataTraining, DataTesting
 from flask import current_app as app
 from dateutil import parser as date_parser
 from datetime import datetime
+# from flask_paginate import Pagination, get_page_args
+from flask_paginate import Pagination, get_page_args
 
 # Nabil (30/05/2024)
 # Import dialect mysql dari sqlalchemy
@@ -31,55 +34,6 @@ from sklearn.preprocessing import LabelEncoder
 import joblib
 
 main = Blueprint('main', __name__)
-# Upload file
-# UPLOAD_FOLDER = 'uploads'
-# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-# Route index
-# @main.route('/')
-# def index():
-#     return render_template('upload.html')
-
-# @main.route('/upload-file',methods=['POST'])
-# def uploadFile():
-
-#      uploaded_file = request.files['file']
-
-#      if uploaded_file.filename != '':
-#           file_path = os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file.filename)
-#           uploaded_file.save(file_path)
-#           parseCSV(file_path)
-
-#           return redirect(url_for('home'))
-
-# def parseCSV(file_path):
-#     col_names = [
-#         'conversation_id_str'
-#     ]
-#     col_names = [
-#         'conversation_id_str', 'created_at', 'favorite_count', 'full_text', 'id_str',
-#         'image_url', 'in_reply_to_screen_name', 'lang', 'location', 'quote_count',
-#         'reply_count', 'retweet_count', 'tweet_url', 'user_id_str', 'username'
-#     ]
-
-#     csvData = pd.read_csv(file_path,names=col_names,header=None)
-
-
-#     for i, row in csvData.iterrows():
-#         sql = """INSERT INTO tweet_guru (
-#                 conversation_id_str, created_at, favorite_count, full_text, id_str,
-#                 image_url, in_reply_to_screen_name, lang, location, quote_count,
-#                 reply_count, retweet_count, tweet_url, user_id_str, username
-#         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-
-#         value = (
-#             row['conversation_id_str'], row['created_at'], row['favorite_count'], row['full_text'], row['id_str'],
-#             row['image_url'], row['in_reply_to_screen_name'], row['lang'], row['location'], row['quote_count'],
-#             row['reply_count'], row['retweet_count'], row['tweet_url'], row['user_id_str'], row['username']
-#         )
-#         mycursor = mysql.connection.cursor()  # Add this line to define mycursor
-#         mycursor.execute(sql,value)
-#         mysql.connection.commit()
 
 # Blueprint adalah memisahkan beberapa bagian seperti route dan fungsi
 # main.route yang ada di def index merupakan route untuk menampilkan halaman utama
@@ -102,6 +56,7 @@ def home():
                 return redirect(url_for('main.showGuru'))
     return render_template('tweetGuru.html')
 
+# Route untuk menyimpan file csv yang telah di unggah
 def save_uploaded_file(uploaded_file):
     file_path = None
     try:
@@ -111,25 +66,31 @@ def save_uploaded_file(uploaded_file):
         print("Error saving uploaded file:", str(e))
     return file_path
 
+# Route buat memproses menyimpan file csv ke database kemudian menapilkan data
 def parse_and_insert_csv(file_path):
     try:
-        print("Parsing and inserting CSV file:", file_path)
+        print("File CSV :", file_path)
+        # Menampung column name yang akan ditampilkan
         col_names = [
             'conversation_id_str', 'created_at', 'favorite_count', 'full_text', 'id_str',
             'image_url', 'in_reply_to_screen_name', 'lang', 'location', 'quote_count',
             'reply_count', 'retweet_count', 'tweet_url', 'user_id_str', 'username'
         ]
+        # Membaca file csv dan menghapus baris yang isinya kosong
         csvData = pd.read_csv(file_path, names=col_names, header=None)
         csvData.replace('nan', None, inplace=True)
+        # csvData.dropna(inplace=True)
 
-        for i, row in csvData.iterrows():
+        # Koneksi ke database mysql
+        cursor = mysql.connection.cursor()
+
+        # Melakukan iterasi setiap bari pada csvData
+        for _, row in csvData.iterrows():
             location = deleteNonAsciiCharacters(row['location'])
             row = row.fillna('')
             created_at = row['created_at']
 
-            # Menggunakan dateutil.parser.parse() untuk mem-parse created_at_str
             try:
-                # created_at_obj = date_parser.parse(created_at)
                 created_at_obj = datetime.strptime(created_at, "%a %b %d %H:%M:%S %z %Y")
             except ValueError:
                 print("Tidak dapat mem-parse created_at:", created_at)
@@ -140,31 +101,30 @@ def parse_and_insert_csv(file_path):
             # if (existing_guru):
             #     continue
 
-            guru = Guru(
-                conversation_id_str=row['conversation_id_str'],
-                created_at=created_at_obj,
-                favorite_count=row['favorite_count'],
-                full_text=row['full_text'],
-                id_str=row['id_str'],
-                image_url=row['image_url'],
-                in_reply_to_screen_name=row['in_reply_to_screen_name'],
-                lang=row['lang'],
-                location=location,
-                quote_count=row['quote_count'],
-                reply_count=row['reply_count'],
-                retweet_count=row['retweet_count'],
-                tweet_url=row['tweet_url'],
-                user_id_str=row['user_id_str'],
-                username=row['username']
+            # Perintah SQL untuk memasukkan data hasil dari upload file csv
+            sql = """ INSERT INTO guru (conversation_id_str, created_at, favorite_count, full_text,
+                id_str, image_url, in_reply_to_screen_name, lang, location, quote_count,
+                reply_count, retweet_count, tweet_url, user_id_str, username)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) """
+
+            values = (
+                row['conversation_id_str'], created_at_obj, row['favorite_count'],
+                row['full_text'], row['id_str'], row['image_url'],
+                row['in_reply_to_screen_name'], row['lang'], location,
+                row['quote_count'], row['reply_count'], row['retweet_count'],
+                row['tweet_url'], row['user_id_str'], row['username']
             )
 
-            db.session.add(guru)
-        db.session.commit()
+            # Menjalankan perintah sql, values
+            cursor.execute(sql, values)
+            mysql.connection.commit()
 
     except Exception as e:
-        print("Error parsing and inserting CSV:", str(e))
+        print("Error Mengambil data dan memasukkan file CSV ke database:", str(e))
+    finally:
+        cursor.close()
 
-# Menghapus simbol-simbol yang ada di text, lokasi
+# Menghapus simbol-simbol, huruf yang ada di location
 def deleteNonAsciiCharacters(text):
     if isinstance(text, float) and pd.isna(text):
         return
@@ -178,35 +138,47 @@ def showGuru():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
 
-    # Membuat pagination
-    page = request.args.get('page', 1, type=int)
+    # Mengatur nomor halaman pada pagination dan nilai defaultnya 1
+    page, per_page, offset = get_page_args(page_parameter='page', per_page_parameter='per_page')
     per_page = 20
-    paginated_data = Guru.query.paginate(page=page, per_page=per_page)
+    offset = (page - 1) * per_page
 
     # Melakukan debugging query mysql
     # Nabil (30/05/2024)
     # print(str(paginated_data.query.statement.compile(dialect=mysql.dialect())), flush=True)
 
-    total_pages = paginated_data.pages
-    current_page = paginated_data.page
+    # Membuat koneksi ke database
+    cursor = mysql.connection.cursor()
 
-    start_page = max(1, current_page - 2)
-    end_page = min(total_pages, current_page + 2) + 1
-    pagination_range = range(start_page, end_page)
+    # Mengambil semua data dari tabel guru
+    cursor.execute("SELECT * FROM guru LIMIT %s OFFSET %s", (per_page, offset))
+
+    # Mengambil semua hasil query
+    data = cursor.fetchall()
 
     # Menghitung total data
-    total_data = Guru.query.count()
+    cursor.execute("SELECT COUNT(*) FROM guru")
+    total_data = cursor.fetchone()[0]
+    # total_data = len(data)
+
+    # Mendapatkan username dari session
     username = session['username']
+
+    # Menghitung jumlah halaman, jumlah data per halaman dan total halaman di pagination
+    pagination = Pagination(page=page, per_page=per_page, total=total_data, css_framework='bootstrap5')
+
+    cursor.close()
 
     return render_template(
         'tweetGuru.html',
-        data=paginated_data.items,
+        data=data,
         total_data=total_data,
         current_url=request.path,
         username=username,
-        current_page=current_page,
-        total_pages=total_pages,
-        pagination_range=pagination_range,
+        current_page=page,
+        total_pages=pagination.total_pages,
+        per_page=per_page,
+        pagination=pagination,
     )
 
 # Route upload Preprocessing CSV dan simpan ke database mysql
@@ -229,7 +201,7 @@ def uploadPreprocessing():
 
         # Cek full_text ada di dataframe
         if 'full_text' not in df.columns:
-            return "Column 'full_text' not found in the CSV file", 400
+            return "Kolom 'full_text' tidak ditemukan pada file CSV", 400
 
         # Drop duplikasi dan nilai kosong
         df = df.drop_duplicates(subset=['full_text'])
@@ -246,27 +218,27 @@ def uploadPreprocessing():
         # Mengubah format created_at menjadi datetime
         df['created_at'] = pd.to_datetime(df['created_at'], format='%a %b %d %H:%M:%S %z %Y').dt.strftime('%Y-%m-%d %H:%M:%S')
 
-        # Insert data to database
+        # Menyimpan data ke database tabel preprocess_guru
         try:
             for _, row in df.iterrows():
-                preprocessing = PreprocessGuru(
-                    full_text=row['full_text'],
-                    username=row['username'],
-                    created_at=datetime.strptime(row['created_at'], '%Y-%m-%d %H:%M:%S'),
-                    tweet_url=row['tweet_url']
-                )
-                db.session.add(preprocessing)
-            db.session.commit()
+                cursor = mysql.connection.cursor()
+                sql = """ INSERT INTO preprocess_guru (full_text, username, created_at, tweet_url)
+                    VALUES (%s, %s, %s, %s) """
+                values = (row['full_text'], row['username'], row['created_at'], row['tweet_url'])
+                cursor.execute(sql, values)
+                mysql.connection.commit()
 
             # Pesan berhasil preprocessing
             flash('File berhasil di preprocessing', 'success')
             return redirect(url_for('main.AllPreprocessing'))
 
+        # Perintah untuk menampilkan pesan error pada saat melakukan preprocessing
         except Exception as e:
             print("Error:", str(e))
             flash('Terjadi kesalahan saat preprocessing', 'danger')
             return redirect(url_for('main.uploadPreprocessing'))
 
+# Fungsi untuk melakukan preprocessing text
 def preprocess_text(text):
     # Clear Twitter text
     text = clear_twitter_text(text)
@@ -284,37 +256,45 @@ def preprocess_text(text):
     stemming_text = stemming(text_cleaning)
     return stemming_text
 
-# Route Menampilkan hasil dari preprocessing
+# # Route Menampilkan hasil dari preprocessing
 @main.route('/show-preprocessing', methods=['GET'])
 def AllPreprocessing():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
 
     # Membuat pagination
-    page = request.args.get('page', 1, type=int)
+    page, per_page, offset = get_page_args(page_parameter='page', per_page_parameter='per_page')
     per_page = 20
-    paginated_data = PreprocessGuru.query.paginate(page=page, per_page=per_page)
+    offset = (page - 1) * per_page
 
-    total_pages = paginated_data.pages
-    current_page = paginated_data.page
+    # Membuat koneksi ke database
+    cursor = mysql.connection.cursor()
 
-    start_page = max(1, current_page - 2)
-    end_page = min(total_pages, current_page + 2) + 1
-    pagination_range = range(start_page, end_page)
+    # Mengambil semua data dari tabel guru
+    cursor.execute("SELECT * FROM preprocess_guru LIMIT %s OFFSET %s", (per_page, offset))
 
-    # Menampilkan total data
-    # total_data = PreprocessGuru.query.count()
+    # Mengambil semua hasil query
+    data = cursor.fetchall()
+
+    # Menghitung total data
+    cursor.execute("SELECT COUNT(*) FROM preprocess_guru")
+    total_data = cursor.fetchone()[0]
+
+    # Menghitung jumlah halaman, jumlah data per halaman dan total halaman di pagination
+    pagination = Pagination(page=page, per_page=per_page, total=total_data, css_framework='bootstrap5')
+
+    # Mendapatkan username dari session
     username = session['username']
 
     return render_template(
         'preprocessing.html',
-        data=paginated_data.items,
-        # total_data=total_data,
+        data=data,
+        total_data=total_data,
         current_url=request.path,
         username=username,
-        current_page=current_page,
-        total_pages=total_pages,
-        pagination_range=pagination_range,
+        current_page=page,
+        per_page=per_page,
+        pagination=pagination,
         )
 
 # Route menyimpan file CSV ke Database
