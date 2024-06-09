@@ -162,8 +162,11 @@ new_array = ArrayDictionary(stop_words)
 stop_words_remover_new = StopWordRemover(new_array)
 
 def stopword(text):
-    text = stop_words_remover_new.remove(text)
-    return text
+    try:
+        text = stop_words_remover_new.remove(text)
+        return text
+    except Exception as e:
+        print(f'Error stopword: {e}')
 
 # Editor Nabil 17/05/2024
 # def stopword(str_text):
