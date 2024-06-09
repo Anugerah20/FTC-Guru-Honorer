@@ -242,18 +242,24 @@ def uploadPreprocessing():
 def preprocess_text(text):
     # Clear Twitter text
     text = clear_twitter_text(text)
+
     # Normalisasi
     text = normalisasi(text)
+
     # Stopword
     text = stopword(text)
+
     # Tokenized
     # tokens = tokenized(text)
     # text = " ".join(tokenized(text))
     text_cleaning = tokenized(text)
+
     # Stemming
     # text = stemming(tokens)
     # return text
     stemming_text = stemming(text_cleaning)
+    # stemming_text = stemming(text)
+
     return stemming_text
 
 # # Route Menampilkan hasil dari preprocessing
