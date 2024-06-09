@@ -703,7 +703,7 @@ replacements = {'krn': 'karena',
                 'bsbs': 'bisa',
                 'mrk': 'mereka',
                 'msh': 'masih',
-                'hrsnya': 'harusnya',
+                'hrsnya': 'harus',
                 'sdngkan': 'sedangkan',
                 'lu': 'kamu',
                 'loe': 'kamu',
@@ -737,7 +737,7 @@ replacements = {'krn': 'karena',
                 'tuk': 'untuk',
                 '300k': '300 ribu',
                 'tu': 'itu',
-                'pgnnya': 'pengenya',
+                'pgnnya': 'mau',
                 '50k': '50 ribu',
                 'ga': 'tidak',
                 'gk': 'tidak',
@@ -1385,9 +1385,9 @@ replacements = {'krn': 'karena',
                 'mjd': 'mejadi'
                 }
 
-# Create a regular expression pattern by joining the keys with '|'
+# Membuat pola ekspresi reguler dengan menggabungkan kunci dengan '|'
 pattern = re.compile(r'\b(' + '|'.join(re.escape(key) for key in replacements.keys()) + r')\b')
 
-# Define a function to perform the replacements using regex
+# Tentukan fungsi untuk melakukan penggantian menggunakan regex
 def normalisasi(text):
     return pattern.sub(lambda x: replacements[x.group()], text)
