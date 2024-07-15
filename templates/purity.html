@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Clustering{% endblock %}
+
+{% block content %}
+
+<body>
+     <div class="container">
+          <h2>Hasil Purity</h2>
+          {% if clusters %}
+          <table class="table table-bordered">
+               <thead>
+                    <tr>
+                         <th>Cluster ID</th>
+                         <th>Jumlah Tweet Setiap Klaster</th>
+                         <th>Jumlah Tweet Maksimum di Setiap Klaster</th>
+                         <th>Proportion</th>
+                    </tr>
+               </thead>
+               <tbody>
+                    {% for metric in cluster_metrics %}
+                    <tr>
+                         <td>{{ metric['Cluster ID'] }}</td>
+                         <td>{{ metric['Number of Tweets'] }}</td>
+                         <td>{{ metric['Maximum Number of Tweets'] }}</td>
+                         <td>{{ metric['Proportion'] }}</td>
+                    </tr>
+                    {% endfor %}
+               </tbody>
+          </table>
+          <p>Purity Score: {{ purity }}</p>
+          {% else %}
+          <p>Belum ada data yang diuji.</p>
+          {% endif %}
+     </div>
+     {% endblock %}
