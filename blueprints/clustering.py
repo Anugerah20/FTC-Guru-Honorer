@@ -560,7 +560,7 @@ def delete_cluster():
         return jsonify({'error': str(e)})
 
 
-    # Fungsi untuk memuat data JSON dari file
+# Fungsi untuk memuat data JSON dari file
 def load_json_data(filepath):
     try:
         with open(filepath, 'r') as file:
@@ -590,7 +590,7 @@ def index():
 
     username = session['username']
     filepath = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_clusterrr.json'
-    clustering_result = load_json_data(filepath)
+    clustering_result, error_message = load_json_data(filepath)
 
     if clustering_result:
         purity = calculate_purity(clustering_result)
