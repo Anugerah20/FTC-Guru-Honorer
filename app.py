@@ -3,7 +3,6 @@ from config import Config
 from extensions import mysql, cors, db
 from blueprints.auth import auth
 from blueprints.main import main
-from blueprints.labeling import labeling
 from blueprints.clustering import clustering
 
 import os
@@ -13,7 +12,6 @@ from config import Config
 from extensions import mysql, cors, db
 from blueprints.auth import auth
 from blueprints.main import main
-from blueprints.labeling import labeling
 
 app = Flask(__name__)
 
@@ -32,7 +30,6 @@ migrate = Migrate(app, db, compare_type=True)
 # daftar blueprint agar lebih mudah dibaca
 app.register_blueprint(auth)
 app.register_blueprint(main)
-app.register_blueprint(labeling, app=app)
 app.register_blueprint(clustering)
 
 if __name__ == '__main__':
