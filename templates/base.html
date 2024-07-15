@@ -30,35 +30,27 @@
                                         Tweet</a>
                               </li>
                               <!-- Editor: Nabil (14/05/2024)  -->
+
                               <li class="nav-item">
                                    <a class="nav-link {% if current_url == '/show-preprocessing' %}active{% endif %}"
                                         href="/show-preprocessing">Preprocessing</a>
                               </li>
 
+                              </li>
+                              <!-- NEW -->
                               <li class="nav-item">
-                                   <a class="nav-link {% if current_url == '/clustering' %}active{% endif %}"
-                                        href="/clustering">Clustering</a>
+                                   <a class="nav-link {% if current_url == '/ftc' %}active{% endif %}"
+                                        href="/ftc">Kluster FTC</a>
                               </li>
 
-                              <!-- EDITOR: NABIL 03/06/2024 -->
-                              <!-- <li class="nav-item">
-                                   <a class="nav-link {% if current_url == '/show-data-training' %}active{% endif %}"
-                                        href="/show-data-training">Data Training</a>
-                              </li> -->
-
-                              <!-- <li class="nav-item">
-                                   <a class="nav-link {% if current_url == '/show-data-testing' %}active{% endif %}"
-                                        href="/show-data-testing">Data Testing</a>
-                              </li> -->
-
-                              <!-- <li class="nav-item">
-                                   <a class="nav-link {% if current_url == '/training-model' %}active{% endif %}"
-                                        href="/training-model">Akurasi</a>
-                              </li> -->
-
+                              <li class="nav-item">
+                                   <a class="nav-link {% if current_url == '/purity' %}active{% endif %}"
+                                        href="/purity">Pengujian</a>
+                              </li>
                               {% if username %}
                               <li class="nav-item">
-                                   <a href="#" class="nav-link text-decoration-none text-dark fw-bold">Hai, {{ username
+                                   <a href="#" class="nav-link text-decoration-none text-dark fw-bold mr-3">Welcome, {{
+                                        username
                                         }}</a>
                               </li>
                               <li class="nav-item">
