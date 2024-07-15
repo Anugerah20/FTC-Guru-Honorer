@@ -1,350 +1,677 @@
-# KODINGAN LAMA
-# EDITOR: Nabil 02/06/2024
-# from flask import Blueprint, render_template
-# import pandas as pd
-# import re
-# import numpy as np
-# import nltk # untuk melakukan proses preprocessing
-# import matplotlib.pyplot as plt
-# plt.switch_backend('agg') # untuk menghindari error ketika menjalankan di server tanpa GUI
-# from sklearn.feature_extraction.text import TfidfVectorizer # TfidfVectorizer digunakan untuk mengubah teks menjadi vektor
-# from sklearn.cluster import KMeans # KMeans digunakan untuk melakukan clustering
-# from sklearn.manifold import MDS # MDS untuk mengurangi dimensi data
-# from collections import Counter # collections digunakan untuk menghitung frekuensi kata
+'''
+Kodingan Terbaru Menggunakan Metode
+Frequent Term Based Clustering (FTC)
+'''
 
-# nltk.download('stopwords')
-
-# clustering = Blueprint('clustering', __name__)
-
-# # Fungsi untuk membaca dataset dari file CSV
-# def load_dataset(filename):
-#     df = pd.read_csv(filename)
-#     acc_names = df['username'].tolist()
-#     tweets = df['full_text'].tolist()
-#     return acc_names, tweets
-
-# # definisikan beberapa fungsi untuk kebutuhkan pre-processing, pre-processing yang dilakukan adalah
-# # A. lowercasing
-# # B. stopword removal
-# # C. stemming
-
-# stopwords = set(nltk.corpus.stopwords.words('indonesian'))
-
-# def preprocess(text):
-#     # tokenizing and lowercasing
-#     tokens = [word.lower() for word in text.split()]
-#     filtered_tokens = []
-#     # buat yang bukan terdiri dari alfabet, dan bukan stopword
-#     for token in tokens:
-#         if re.search('[a-zA-Z]', token) and (token not in stopwords):
-#             filtered_tokens.append(token)
-#     return " ".join(filtered_tokens)
-
-
-# # Fungsi untuk proses melakukan clustering
-# def perform_clustering():
-#     # memuat dataset
-#     acc_names, tweets = load_dataset("./dataset/gabungan_training.csv")
-
-#     # Preprocess tweets
-#     preprocessed_tweets = [preprocess(tweet) for tweet in tweets]
-
-#     # TF-IDF Vectorizer
-#     vectorizer = TfidfVectorizer(max_features=5000)
-#     X = vectorizer.fit_transform(preprocessed_tweets)
-
-#     # Menggunakan KMeans untuk clustering
-#     num_topics = 4
-#     km = KMeans(n_clusters=num_topics)
-#     km.fit(X)
-#     clusters = km.labels_.tolist()
-
-#     # MDS untuk reduksi dimensi ke 2D
-#     mds = MDS(n_components=2)
-#     pos = mds.fit_transform(X.toarray())
-#     xs, ys = pos[:, 0], pos[:, 1]
-
-#     # Menghitung frekuensi kata untuk setiap cluster
-#     cluster_word_counts = [Counter() for _ in range(num_topics)]
-
-#     # Hitung frekuensi kata untuk setiap cluster-nya
-#     for i, cluster in enumerate(clusters):
-#         words = preprocessed_tweets[i].split()
-#         cluster_word_counts[cluster].update(words)
-
-#     # Buat plot clustering
-#     plt.figure(figsize=(10, 10))
-#     for x, y, username, cluster in zip(xs, ys, acc_names, clusters):
-#         # plt.text(x, y, username, fontsize=9)
-#         # plt.text(x, y, f'{username}\n{tweet}\n{cluster}', fontsize=9)
-#         plt.text(x, y, f'{username}', fontsize=9, ha='right', va='top', color='blue')
-
-#         # Tambahkan kata yang sering muncul pada pojok kanan atas
-#     for i, (cluster_word_count, cluster) in enumerate(zip(cluster_word_counts, clusters)):
-#         top_words = cluster_word_count.most_common(4)  # Ambil 10 kata teratas
-#         # top_words_text = '\n'.join([f'{word}: {count}' for word, count in top_words])
-#         top_word = top_words[0][0]
-#         plt.text(xs[i], ys[i], top_word, fontsize=9, ha='right', va='top', color='red')
-
-#     plt.scatter(xs, ys, c=clusters, cmap='viridis', alpha=0.6)
-#     plt.title('Clustering of Tweets')
-#     image_path = './static/images/clustering_guru.png'
-#     plt.savefig(image_path)
-#     plt.close()
-
-#     return image_path, clusters, tweets
-
-# # Fungsi untuk membuat plot distribusi kata-kata
-# def generate_word_distribution_plot(tweets, clusters, num_topics=4):
-#     vectorizer = TfidfVectorizer(max_features=5000)
-#     X = vectorizer.fit_transform(tweets)
-#     terms = vectorizer.get_feature_names_out()
-#     X = X.toarray()
-#     terms = np.array(terms)
-#     image_paths = []  # List untuk menyimpan path gambar
-
-#     for topic in range(num_topics):
-#         cluster_tweets = [tweets[i] for i in range(len(tweets)) if clusters[i] == topic]
-#         all_words = ' '.join(cluster_tweets).split()
-#         word_counts = Counter(all_words)
-#         common_words = word_counts.most_common(10)
-#         words, counts = zip(*common_words)
-
-#         plt.figure()
-#         plt.bar(words, counts)
-#         plt.xticks(rotation='vertical')
-#         plt.title(f'Word Distribution of Topic {topic}')
-#         image_path = f'./static/images/word_distribution_topic_{topic}.png'
-#         plt.savefig(image_path)
-#         plt.close()
-#         image_paths.append(image_path)  # Tambahkan path gambar ke list
-#     return image_paths
-
-# # Router untuk melakukan clustering menampilkan username dan tweet full_text
-# @clustering.route('/clustering', methods=['GET'])
-# def clustering_tweet():
-#     image_path, clusters, tweets = perform_clustering()
-#     image_paths = generate_word_distribution_plot(tweets, clusters)
-#     return render_template('klustering.html', image_path=image_path, world_distribution=image_paths)
-
-
-from flask import Blueprint, render_template, redirect, session, request, url_for
-import pandas as pd
-import re
+import random
+from itertools import combinations
+from flask import Blueprint, render_template, redirect, session, request, url_for, flash, jsonify
 import numpy as np
-import nltk # untuk melakukan proses preprocessing
-import matplotlib.pyplot as plt
-plt.switch_backend('agg') # untuk menghindari error ketika menjalankan di server tanpa GUI
-from sklearn.feature_extraction.text import TfidfVectorizer # TfidfVectorizer digunakan untuk mengubah teks menjadi vektor
-from sklearn.cluster import KMeans # KMeans digunakan untuk melakukan clustering
-from sklearn.manifold import MDS # MDS untuk mengurangi dimensi data
-from collections import Counter # collections digunakan untuk menghitung frekuensi kata
-import os # Untuk membuat folder dan menyimpan gambar
-from sklearn.metrics import silhouette_score, davies_bouldin_score # Menggunakan silhouette score dan davies bouldin score untuk evaluasi clustering
-
-nltk.download('stopwords')
+from math import log, sqrt
+import math
+import pandas as pd
+from collections import Counter
+import json
+import os
+import re
+import mysql.connector
+from werkzeug.utils import secure_filename
+import logging # digunakan untuk debugging
+from collections import defaultdict, Counter
+import operator
 
 clustering = Blueprint('clustering', __name__)
 
-# Fungsi untuk membaca dataset dari file CSV
-# List acc_names berisikan username kemudian list tweets berisikan full_text
-def read_dataset(filename):
-    df = pd.read_csv(filename)
-    acc_names = df['username'].tolist()
-    tweets = df['full_text'].tolist()
-    return acc_names, tweets
+'''
+# Fungsi untuk koneksi ke tabel_bersih
+def db_connect(host, user, password, database):
+    conn = mysql.connector.connect(
+        host=host,
+        user=user,
+        password=password,
+        database=database
+    )
+    cursor = conn.cursor()
+    return conn, cursor
 
-# Menggunakan beberapa fungsi untuk kebutuhkan pre-processing, ini tahapan pre-processing sebagai berikut:
-# A. lowercasing
-# B. stopword removal
-# C. stemming
+# Fungsi untuk memanggil data dari tabel_bersih
+def fetch_data():
+    conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
+    cursor.execute("SELECT full_text FROM bersih")
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return [row[0] for row in rows]
 
-# corpus yang digunakan adalah corpus bahasa indonesia
-stopwords = set(nltk.corpus.stopwords.words('indonesian'))
+# Fungsi untuk menyimpan data ke tabel_bersih
+def save_text_to_db(texts):
+    conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
+    cursor.executemany("INSERT INTO bersih (full_text) VALUES (%s)", [(text,) for text in texts])
+    conn.commit()
+    cursor.close()
+    conn.close()
 
-# Fungsi ini digunakan melakukan pre-processing pada teks
-def preprocess(text):
-    # tokenizing and lowercasing
-    tokens = [word.lower() for word in text.split()]
-    filtered_tokens = []
-    # buat yang bukan terdiri dari alfabet, dan bukan stopword
-    for token in tokens:
-        if re.search('[a-zA-Z]', token) and (token not in stopwords):
-            filtered_tokens.append(token)
-    return " ".join(filtered_tokens)
+# Fungsi proses klustering Frequent Term Based Clustering (FTC)
+def process_cluster(data):
+    # Langkah 2: Menggabungkan teks
+    all_text = ' '.join(data)
 
-# Fungsi untuk membuat plot clustering dokumen
-# Menggunakan MDS untuk mereduksi dimensi ke 2D
-# Kemudian plot dengan matplotlib unutk menampilkan cluster yang bersisikan username dan label cluster
-def plot_doc_cluster(xs, ys, clusters, acc_names, cluster_names):
-    cluster_colors = {0: '#1b9e77', 1: '#d95f02', 2: '#7570b3', 3: '#e7298a', 4: '#66a61e'}
-    df = pd.DataFrame(dict(x=xs, y=ys, label=clusters, acc_names=acc_names))
-    groups = df.groupby('label')
-    fig, ax = plt.subplots(figsize=(12, 12))
-    ax.margins(0.05)
+    # Mengganti kata baku
+    all_text = all_text.replace('aja', 'saja')
 
-    # Proses perulangan cluster
-    for name, group in groups:
-        ax.plot(group.x, group.y, marker='o', linestyle='', ms=12, label=cluster_names[name], color=cluster_colors[name], mec='none')
-        ax.set_aspect('auto')
-        ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
-        ax.tick_params(axis='y', which='both', left=False, top=False, labelleft=False)
+    # Langkah 3: Membagi teks menjadi kata-kata
+    words = all_text.split()
 
-    ax.legend(numpoints=1)
+    # Langkah 4: Menghitung frekuensi kemunculan kata
+    word_counts = Counter(words)
 
-    # Perulangan untuk menampilkan username
-    for i in range(len(df)):
-        ax.text(df.loc[i]['x'], df.loc[i]['y'], df.loc[i]['acc_names'], size=8)
+    # Langkah 5: Menghitung probabilitas kemunculan kata
+    total_words = sum(word_counts.values())
+    word_probabilities = {word: count / total_words for word, count in word_counts.items()}
 
-    # Kalau tidak ada folder static/images, maka buat folder baru
-    if not os.path.exists('./static/images'):
-        os.makedirs('./static/images')
+    # Langkah 6: Mengurutkan kata berdasarkan probabilitas dan memilih 10 kata teratas
+    sorted_word_probabilities = dict(sorted(word_probabilities.items(), key=lambda item: item[1], reverse=True)[:10])
 
-    # Menyimpan gambar ke dalam folder static/images
-    image_cluster = './static/images/clustering_guru.png'
-    plt.savefig(image_cluster)
-    plt.close()
+    # Langkah 7: Membuat klaster berdasarkan kombinasi term teratas dan kata tunggal
+    clusters = defaultdict(list)
+    top_terms = list(sorted_word_probabilities.keys())
+    min_support = 4 # Memberikan minimum support 4
 
-    return image_cluster
+    for index, text in enumerate(data):
+        words = text.split()
 
-# Fungsi untuk proses melakukan clustering
-def perform_clustering():
-    # memuat dataset
-    acc_names, tweets = read_dataset("./dataset/data_cluster.csv")
+        # Tambahkan kata tunggal yang sering muncul
+        for word in words:
+            if word in top_terms and word:
+                clusters[word].append(f'D{index+1}')
 
-    # Preprocess tweets menggunakan fungsi preprocess
-    preprocessed_tweets = [preprocess(tweet) for tweet in tweets]
+        # Tambahkan kombinasi dua term
+        for term1 in top_terms:
+            if term1 in words:
+                for term2 in top_terms:
+                    if term2 in words and term1 != term2:
+                        clusters[f'{term1}, {term2}'].append(f'D{index+1}')
 
-    # TF-IDF Vectorizer digunakan untuk mengubah teks menjadi vektor
-    vectorizer = TfidfVectorizer(max_features=5000)
-    X = vectorizer.fit_transform(preprocessed_tweets)
+    cluster_candidates = [(terms, docs) for terms, docs in clusters.items() if len(docs) >= min_support]
 
-    # DEBUGGING: Menampilkan shape dari X
-    # print(f'shape of x: {X.shape}')
+    # Langkah 9: Menghitung nilai entropy overlap untuk setiap klaster
+    def calculate_entropy_overlap(docs):
+        term_count = Counter()
+        total_terms = 0
+        total_docs = len(docs)
 
-     # Check for NaN or Inf values
-    if np.isnan(X.toarray()).any() or np.isinf(X.toarray()).any():
-        raise ValueError("Data contains NaN or Inf values.")
+        for doc in docs:
+            text = data[int(doc[1:]) - 1]
+            words = text.split()
+            term_count.update(words)
+            total_terms += len(words)
 
-    # Menggunakan KMeans untuk clustering
-    num_topics = 4
-    # km = KMeans(n_clusters=num_topics, random_state=42)
-    # Menggunakan KMeans untuk clustering dengan inisialisasi k-means++
-    km = KMeans(n_clusters=num_topics, random_state=42, init='k-means++')
-    km.fit(X)
-    clusters = km.labels_.tolist()
+        entropy = 0
+        for term, count in term_count.items():
+            probability = count / total_terms
+            entropy -= probability * math.log(probability, 2)
 
-    # DEBUGGING: Menampilkan cluster labels dan unique cluster labels
-    # print(f"Cluster labels: {clusters}")
-    # print(f"Unique cluster labels: {set(clusters)}")
+        return entropy / total_docs
 
-    # MDS untuk reduksi dimensi ke 2D
-    mds = MDS(n_components=2)
-    pos = mds.fit_transform(X.toarray())
-    xs, ys = pos[:, 0], pos[:, 1]
+    # Langkah 10: Menyiapkan data untuk disimpan ke JSON
+    json_data = []
+    terms_involved = set()
 
-    # Menghitung frekuensi kata untuk setiap cluster
-    cluster_word_counts = [Counter() for _ in range(num_topics)]
+    for terms, docs in cluster_candidates:
+        terms_list = terms.split(', ')
+        terms_involved.update(terms_list)
+        entropy = calculate_entropy_overlap(docs)
 
-    # Hitung frekuensi kata untuk setiap cluster-nya
-    for i, cluster in enumerate(clusters):
-        words = preprocessed_tweets[i].split()
-        cluster_word_counts[cluster].update(words)
+        # Menyiapkan dokumen yang terlibat
+        documents_list = []
+        for doc in docs:
+            documents_list.append(doc)
+        documents_to_show = documents_list[:4] # Menampilkan 4 dokumen
 
-    # Tentukan nama cluster berdasarkan kata yang sering muncul
-    cluster_names = {}
-    for i, word_count in enumerate(cluster_word_counts):
-        common_words = word_count.most_common(3)
-        cluster_names[i] = ', '.join([word for word, count in common_words])
+        full_text = [data[int(doc[1:]) - 1] for doc in documents_list]
 
-    # Buat plot clustering
-    plot_url = plot_doc_cluster(xs, ys, clusters, acc_names, cluster_names)
+        json_data.append({
+            'Terms': terms_list,
+            'Documents': documents_to_show,
+            'Full_Text': full_text,
+            'EO': entropy,
+        })
 
-    # Proses evaluasi clustering menggunakan silhouette score dan davies bouldin score
-    # Inertia merupakan jarak kuadrat antara setiap sampel cluster terdekat, semakin kecil nilai inertia semakin baik
-    inertia = km.inertia_
+    return json_data, terms_involved
 
-    # Silhouette Score Mengukur seberapa mirip antara cluster sendiri dibandingkan dengan cluster yang lain
-    # -1 nilai buruk sedangkan 1 nilai baik
-    # Jika jumlah cluster lebih dari 1, maka hitung silhouette score
-    if len(set(km.labels_)) > 1:
-        silhoutte_avg = silhouette_score(X, km.labels_)
-    else:
-        silhoutte_avg = None
+# Testing clustering ftc
+data = [
+    "guru honorer rendahin banyak anak baca nulis ngitung kerja mulia kaya gitu bisa nya bina memang gaji guru honorer rendah salah guru salah sistemasi perintah aja kurang apresiasi guru honorer",
+    "kakak honorer semenjak lulus sarjana gaji guru kata cuma isi bensin",
+    "allah padahal banyak guru guru honorer lebih derita guru guru influencer anggar pakai naikin gaji guru honorer acara begini",
+    "semua guru asn semua guru gaji pokok layak tunjang banyak guru gaji bawah rupiah bulan sebut guru honorer",
+    "fakta banyak banget guru honorer sepuh tetep dapat gaji bawah umr padahal guru salah kerja puji coba guru apa dunia malah pandang rendah",
+    "memang rendah dulu sempat honorer ajar bahasa inggris smp jam ribu alhamdulillah bulan ribuan lebih banyak gaji dari ajar prima agama bulan juta sering gantiin guru tidak hadir",
+    "itu tuh emang fakta kirim mama guru honorer gaji bulan paling banyak juta",
+    "hidup bagi dunia mana pengiri memang fakta kaya gitu luar banyak guru honorer gaji kecil guru guru pelosok lebih banyak perlu hadap liat cuman orang untung naik pns"
+]
 
-    # Davies Bouldin mengukur rata-rata jarak antara setiap cluster, semakin kecil nilai semakin baik
-    davies_bouldin = davies_bouldin_score(X.toarray(), km.labels_)
+# Menampilkan hasil testing
+json_data, terms_involved = process_cluster(data)
+print(json_data)
 
-    # DEBUGGING: menampilkan nilai inertia, silhouette score, dan davies bouldin index
-    # print(f"Inertia: {inertia}")
-    # print(f"Silhouette Score: {silhoutte_avg}")
-    # print(f"Davies-Bouldin Index: {davies_bouldin}")
+# Letakkan file csv disini
+UPLOAD_FOLDER = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads'
+# Kondisi jika folder tidak ada, akan dibuat folder baru
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
-    return plot_url, clusters, preprocessed_tweets, inertia, silhoutte_avg, davies_bouldin
+# Fungsi meriksa hanya file csv yang boleh
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'csv'}
 
-# Fungsi untuk membuat plot distribusi kata-kata
-def generate_word_distribution_plot(tweets, clusters, num_topics=4):
-    vectorizer = TfidfVectorizer(max_features=5000)
-    X = vectorizer.fit_transform(tweets)
-    terms = vectorizer.get_feature_names_out()
-    X = X.toarray()
-    terms = np.array(terms)
-    image_paths = []  # List untuk menyimpan path gambar
+@clustering.route('/ftc', methods=['GET', 'POST'])
+#  Fungsi untuk import file csv
+def upload_file():
 
-    # Proses perulangan buat distribusi kata per-topik yang ditemukan
-    for topic in range(num_topics):
-        cluster_tweets = [tweets[i] for i in range(len(tweets)) if clusters[i] == topic]
-        all_words = ' '.join(cluster_tweets).split()
-        word_counts = Counter(all_words)
-        # Mengambil 10 kata teratas
-        common_words = word_counts.most_common(10)
-        words, counts = zip(*common_words)
-
-        plt.figure(figsize=(7, 7))
-        plt.bar(words, counts)
-        plt.xticks(rotation='vertical')
-        plt.title(f'Word Distribution of Topic {topic}')
-
-        # Menyimpan ganmbar ke dalam folder static/images
-        image_path = f'./static/images/word_distribution_topic_{topic}.png'
-        plt.savefig(image_path)
-        plt.close()
-        image_paths.append(image_path)  # Tambahkan path gambar ke list
-    return image_paths
-
-# Router untuk melakukan clustering menampilkan username dan tweet full_text
-@clustering.route('/clustering', methods=['GET'])
-def clustering_tweet():
+    # Kondisi jika user belum login
     if 'username' not in session:
         return redirect(url_for('auth.login'))
 
-    plot_url, clusters, tweets, inertia, silhoutte_avg, davies_bouldin = perform_clustering()
-    # Memanggil fungsi generate_word_distribution_plot untuk membuat plot distribusi kata-kata
-    image_paths = generate_word_distribution_plot(tweets, clusters)
-    # Tampung hasil clustering dan plot distribusi kata-kata ke dalam render_template html
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('Tidak ada file yang dipilih', 'danger')
+            return redirect(show_results)
+        file = request.files['file']
+        if file.filename == '':
+            flash('File belum dipilih', 'danger')
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(file_path)
+            full_text = pd.read_csv(file_path)
+            data = full_text['full_text'].tolist()
+            json_data, terms_involved = process_cluster(data)
 
-    # Tampung username yang sedang login
-    username = session['username']
+            # Simpan hasil klaster FTC ke file JSON
+            with open(os.path.join(UPLOAD_FOLDER, 'ftc_clusterrr.json'), 'w') as json_file:
+                json.dump(json_data, json_file, indent=4)
+
+            #  Simpan data ke database mysql
+            save_text_to_db(data)
+
+            username = session['username']
+
+            return render_template(
+                'upload.html',
+                json_data=json_data,
+                terms_involved=terms_involved,
+                # username=username
+                )
+
     return render_template(
-        'clustering.html',
-        current_url=request.path,
-        username=username,
-        image_cluster=plot_url,
-        image_paths=image_paths,
-        inertia=inertia,
-        silhoutte_avg=silhoutte_avg,
-        davies_bouldin=davies_bouldin
-    )
+        'upload.html',
+        json_data=None,
+        terms_involved=None,
+        # username=username
+        )
 
-# fungsi untuk melakukan data testing
-# @clustering.route('/data-training', methods=['GET'])
-# def data_training():
+# Melihat hasil klastering FTC
+@clustering.route('/ftc/results', methods=['GET'])
+def show_results():
+
+    if 'username' not in session:
+        return redirect(url_for('auth.login'))
+
+    # Menampilkan hasil klasterisasi dari file JSON yang telah disimpan
+    with open(os.path.join(UPLOAD_FOLDER, 'ftc_clusterrr.json'), 'r') as json_file:
+        json_data = json.load(json_file)
+        # Menampilkan term
+        terms_involved = set()
+        for item in json_data:
+            terms_involved.update(item['Terms'])
+
+        # Menampilkan jumlah total klaster
+        total_clusters = len(json_data)
+
+        username = session['username']
+    return render_template('upload.html', json_data=json_data, terms_involved=terms_involved, total_clusters=total_clusters, username=username)
+
+# Membuat fungsi khusus untuk menghapus file csv dan json
+def delete_file(file_path, file_type):
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            logging.info(f'File {file_type} berhasil dihapus: {file_path}')
+            flash(f'File {file_type} berhasil dihapus','success')
+        else:
+            logging.warning(f'File {file_type} tidak ditemukan: {file_path}')
+            print(f'File {file_type} tidak ditemukan','warning')
+    except Exception as e:
+        logging.error(f'Gagal menghapus {file_type}: {file_path} - {e}')
+        print(f'Gagal menghapus {file_type}','danger')
+
+# Membuat route delete data clustering dari database mysql dan file csv serta json
+@clustering.route('/delete-clustering-ftc', methods=['GET', 'DELETE'])
+# Fungsi untuk menghapus data clustering ftc dari database mysql
+def delete_cluster():
+    try:
+        conn, cursor = db_connect(host="localhost", user="root", password="", database="guru_honorer")
+
+        cursor.execute("UPDATE bersih SET full_text = ''")
+        conn.commit()
+
+        # Hapus baris yang memiliki full_text kosong
+        cursor.execute("DELETE FROM bersih WHERE full_text = ''")
+        conn.commit()
+
+        # Menghapus file CSV dengan memanggil fungsi delete_file
+        csv_file_path = './uploads/hasil_preprocesing_guru2.csv'
+        delete_file(csv_file_path, 'File CSV')
+
+        # Menghapus file JSON dengan memanggil fungsi delete_file
+        json_file_path = './uploads/ftc_clusterrr.json'
+        delete_file(json_file_path, 'File JSON')
+
+        cursor.close()
+        conn.close()
+
+        flash('Data berhasil dihapus dari database', 'success')
+        return redirect(url_for('clustering.upload_file'))
+
+    # Tampilkan pesan error jika database error
+    except mysql.connector.Error as err:
+        print(f'Database error: {err}')
+        return redirect(url_for('clustering.upload_file'))
+
+    # Tampilkan pesan error lainnya jika ada
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)})
+'''
+
+'''
+FTC Frequent Term Based Clustering
+TERBARU
+'''
+# Fungsi untuk koneksi ke tabel_bersih
+def db_connect(host, user, password, database):
+    conn = mysql.connector.connect(
+        host=host,
+        user=user,
+        password=password,
+        database=database
+    )
+    cursor = conn.cursor()
+    return conn, cursor
+
+# Fungsi untuk memanggil data dari tabel_bersih
+def fetch_data():
+    conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
+    cursor.execute("SELECT full_text FROM bersih")
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return [row[0] for row in rows]
+
+# Fungsi untuk menyimpan data ke tabel_bersih
+def save_text_to_db(texts):
+    conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
+    cursor.executemany("INSERT INTO bersih (full_text) VALUES (%s)", [(text,) for text in texts])
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+def process_cluster(data):
+    # Langkah 2: Menggabungkan teks
+    all_text = ' '.join(data)
+
+    # Memproses teks dengan menghapus kata-kata yang tidak penting dan mengganti kata
+    all_text = re.sub(r'\baja\b', 'saja', all_text)
+
+    # Menghapus kata yang dan tidak
+    all_text = re.sub(r'\b(?:yang|dan|tidak)\b', '', all_text)
+
+    # Menghapus angka
+    all_text = re.sub(r'\d+', '', all_text)
+
+
+    # Langkah 3: Membagi teks menjadi kata-kata
+    words = all_text.split()
+
+    # Langkah 4: Menghitung frekuensi kemunculan kata
+    word_counts = Counter(words)
+
+    # Langkah 5: Menghitung probabilitas kemunculan kata
+    total_words = sum(word_counts.values())
+    word_probabilities = {word: count / total_words for word, count in word_counts.items()}
+
+    # Langkah 6: Mengurutkan kata berdasarkan probabilitas dan memilih 10 kata teratas
+    sorted_word_probabilities = dict(sorted(word_probabilities.items(), key=lambda item: item[1], reverse=True)[:10])
+
+    # Langkah 7: Membuat klaster berdasarkan kombinasi term teratas dan kata tunggal
+    clusters = defaultdict(set)
+    top_terms = list(sorted_word_probabilities.keys())
+    min_support = 4  # Memberikan minimum support 4
+
+    for index, text in enumerate(data):
+        words = text.split()
+        doc_id = f'D{index+1}'
+
+        # Tambahkan kata tunggal yang sering muncul
+        for word in words:
+            if word in top_terms and word:
+                clusters[word].add(doc_id)
+
+        # Tambahkan kombinasi dua term
+        for term1, term2 in combinations(top_terms, 2):
+            if term1 in words and term2 in words:
+                clusters[f'{term1}, {term2}'].add(doc_id)
+
+        # Tambahkan kombinasi tiga term
+        for term1, term2, term3 in combinations(top_terms, 3):
+            if term1 in words and term2 in words and term3 in words:
+                clusters[f'{term1}, {term2}, {term3}'].add(doc_id)
+
+    cluster_candidates = [(terms, list(docs)) for terms, docs in clusters.items() if len(docs) >= min_support]
+
+    # Langkah 9: Menghitung nilai entropy overlap untuk setiap klaster
+    def calculate_entropy_overlap(docs):
+        term_count = Counter()
+        total_terms = 0
+        total_docs = len(docs)
+
+        for doc in docs:
+            text = data[int(doc[1:]) - 1]
+            words = text.split()
+            term_count.update(words)
+            total_terms += len(words)
+
+        entropy = 0
+        for term, count in term_count.items():
+            probability = count / total_terms
+            entropy -= probability * math.log(probability, 2)
+
+        return entropy / total_docs
+
+    # Langkah 10: Menyiapkan data untuk disimpan ke JSON
+    json_data = []
+    terms_involved = set()
+
+    for terms, docs in cluster_candidates:
+        terms_list = terms.split(', ')
+        terms_involved.update(terms_list)
+        entropy = calculate_entropy_overlap(docs)
+
+        # Menyiapkan dokumen yang terlibat
+        documents_to_show = docs[:3]  # Menampilkan maksimal 3 dokumen
+
+        full_text = [data[int(doc[1:]) - 1] for doc in documents_to_show]
+
+        json_data.append({
+            'Terms': terms_list,
+            'Documents': documents_to_show,
+            # 'Full_Text': full_text,
+            'EO': entropy,
+        })
+
+    return json_data, terms_involved
+
+# Testing clustering ftc
+data = [
+    "guru honorer rendahin banyak anak baca nulis ngitung kerja mulia kaya gitu bisa nya bina memang gaji guru honorer rendah salah guru salah sistemasi perintah aja kurang apresiasi guru honorer",
+    "kakak honorer semenjak lulus sarjana gaji guru kata cuma isi bensin",
+    "allah padahal banyak guru guru honorer lebih derita guru guru influencer anggar pakai naikin gaji guru honorer acara begini",
+    "semua guru asn semua guru gaji pokok layak tunjang banyak guru gaji bawah rupiah bulan sebut guru honorer",
+    "fakta banyak banget guru honorer sepuh tetep dapat gaji bawah umr padahal guru salah kerja puji coba guru apa dunia malah pandang rendah",
+    "memang rendah dulu sempat honorer ajar bahasa inggris smp jam ribu alhamdulillah bulan ribuan lebih banyak gaji dari ajar prima agama bulan juta sering gantiin guru tidak hadir",
+    "itu tuh emang fakta kirim mama guru honorer gaji bulan paling banyak juta",
+    "hidup bagi dunia mana pengiri memang fakta kaya gitu luar banyak guru honorer gaji kecil guru guru pelosok lebih banyak perlu hadap liat cuman orang untung naik pns"
+]
+
+# Menampilkan hasil testing
+json_data, terms_involved = process_cluster(data)
+print(json_data)
+
+# Letakkan file csv disini
+UPLOAD_FOLDER = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads'
+# Kondisi jika folder tidak ada, akan dibuat folder baru
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+# Fungsi meriksa hanya file csv yang boleh
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'csv'}
+
+@clustering.route('/ftc', methods=['GET', 'POST'])
+#  Fungsi untuk import file csv
+def upload_file():
+
+    # Kondisi jika user belum login
+    if 'username' not in session:
+        return redirect(url_for('auth.login'))
+
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('Tidak ada file yang dipilih', 'danger')
+            return redirect(show_results)
+        file = request.files['file']
+        if file.filename == '':
+            flash('File belum dipilih', 'danger')
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(file_path)
+            full_text = pd.read_csv(file_path)
+            data = full_text['full_text'].tolist()
+            json_data, terms_involved = process_cluster(data)
+
+            # Simpan hasil klaster FTC ke file JSON
+            with open(os.path.join(UPLOAD_FOLDER, 'ftc_clusterrr.json'), 'w') as json_file:
+                json.dump(json_data, json_file, indent=4)
+
+            #  Simpan data ke database mysql
+            save_text_to_db(data)
+
+        username = session.get('username')
+        return render_template(
+                'upload.html',
+                json_data=json_data,
+                terms_involved=terms_involved,
+                username=username
+                )
+
+    username = session.get('username')
+    return render_template(
+        'upload.html',
+        json_data=None,
+        terms_involved=None,
+        username=username
+        )
+
+# Melihat hasil klastering FTC
+@clustering.route('/ftc/results', methods=['GET'])
+def show_results():
+
+    if 'username' not in session:
+        return redirect(url_for('auth.login'))
+
+    # Menampilkan hasil klasterisasi dari file JSON yang telah disimpan
+    with open(os.path.join(UPLOAD_FOLDER, 'ftc_clusterrr.json'), 'r') as json_file:
+        json_data = json.load(json_file)
+        # Menampilkan term
+        terms_involved = set()
+        for item in json_data:
+            terms_involved.update(item['Terms'])
+
+        # Menampilkan jumlah total klaster
+        total_clusters = len(json_data)
+
+        username = session['username']
+    return render_template('upload.html', json_data=json_data, terms_involved=terms_involved, total_clusters=total_clusters, username=username)
+
+# Membuat fungsi khusus untuk menghapus file csv dan json
+def delete_file(file_path, file_type):
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            logging.info(f'File {file_type} berhasil dihapus: {file_path}')
+            flash(f'File {file_type} berhasil dihapus','success')
+        else:
+            logging.warning(f'File {file_type} tidak ditemukan: {file_path}')
+            print(f'File {file_type} tidak ditemukan','warning')
+    except Exception as e:
+        logging.error(f'Gagal menghapus {file_type}: {file_path} - {e}')
+        print(f'Gagal menghapus {file_type}','danger')
+
+# Membuat route delete data clustering dari database mysql dan file csv serta json
+@clustering.route('/delete-clustering-ftc', methods=['GET', 'DELETE'])
+# Fungsi untuk menghapus data clustering ftc dari database mysql
+def delete_cluster():
+    try:
+        conn, cursor = db_connect(host="localhost", user="root", password="", database="guru_honorer")
+
+        cursor.execute("UPDATE bersih SET full_text = ''")
+        conn.commit()
+
+        # Hapus baris yang memiliki full_text kosong
+        cursor.execute("DELETE FROM bersih WHERE full_text = ''")
+        conn.commit()
+
+        # Menghapus file CSV dengan memanggil fungsi delete_file
+        csv_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/hasil_preprocesing_guru2.csv'
+        delete_file(csv_file_path, 'File CSV')
+
+        # Menghapus file JSON dengan memanggil fungsi delete_file
+        json_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_clusterrr.json'
+        delete_file(json_file_path, 'File JSON')
+
+        cursor.close()
+        conn.close()
+
+        flash('Data berhasil dihapus dari database', 'success')
+        return redirect(url_for('clustering.upload_file'))
+
+    # Tampilkan pesan error jika database error
+    except mysql.connector.Error as err:
+        print(f'Database error: {err}')
+        return redirect(url_for('clustering.upload_file'))
+
+    # Tampilkan pesan error lainnya jika ada
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': str(e)})
+
+
+    # Fungsi untuk memuat data JSON dari file
+def load_json_data(filepath):
+    try:
+        with open(filepath, 'r') as file:
+            data = json.load(file)
+        if not data:  # Cek jika file JSON kosong
+            return None, 'File JSON kosong'
+        return data, None
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        return None, str(e)
+
+# Fungsi untuk menghitung purity
+def calculate_purity(clustering_result):
+    total_documents = sum(len(cluster["Documents"]) for cluster in clustering_result)
+    max_labels = 0
+    for cluster in clustering_result:
+        documents = cluster["Documents"]
+        label_count = len(documents)  # Semua dokumen dianggap satu kelas
+        max_labels += label_count
+    purity = max_labels / total_documents
+    return purity
+
+# Route untuk halaman purity
+@clustering.route('/purity')
+def index():
+    if 'username' not in session:
+        return redirect(url_for('auth.login'))
+
+    username = session['username']
+    filepath = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_clusterrr.json'
+    clustering_result = load_json_data(filepath)
+
+    if clustering_result:
+        purity = calculate_purity(clustering_result)
+
+        # Menghitung metrik untuk setiap cluster
+        cluster_metrics = []
+        for cluster_id, cluster in enumerate(clustering_result):
+            cluster_size = len(cluster["Documents"])
+            label_count = cluster_size  # Semua dokumen dianggap satu kelas
+            proportion = label_count / cluster_size
+            cluster_metrics.append({
+                'Cluster ID': cluster_id + 1,
+                'Number of Tweets': cluster_size,
+                'Maximum Number of Tweets': label_count,
+                'Proportion': proportion
+            })
+    else:
+        purity = None
+        cluster_metrics = []
+        flash('Proses pengujian belum dilakukan atau file JSON tidak ditemukan/kosong.', 'danger')
+
+    return render_template('purity.html', clusters=clustering_result, purity=purity, cluster_metrics=cluster_metrics, username=username)
+
+
+# Fungsi untuk memuat data JSON dari file
+# def load_json_data(filepath):
+#     try:
+#         with open(filepath, 'r') as file:
+#             data = json.load(file)
+#         if not data:  # Check if the JSON file is empty
+#             print('File JSON kosong')
+#             return None
+#         return data
+#     except (FileNotFoundError, json.JSONDecodeError):
+#         print('File JSON tidak ditemukan')
+#         return None
+
+# # Memuat data clustering dari file JSON
+# filepath = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_clusterrr.json'
+# clustering_result = load_json_data(filepath)
+
+# # Fungsi untuk menghitung purity
+# def calculate_purity(clustering_result):
+#     total_documents = sum(len(cluster["Documents"]) for cluster in clustering_result)
+#     max_labels = 0
+#     for cluster in clustering_result:
+#         documents = cluster["Documents"]
+#         label_count = len(documents)  # Semua dokumen dianggap satu kelas
+#         max_labels += label_count
+#     purity = max_labels / total_documents
+#     return purity
+
+# # Kondisi jika clustering_result tidak ada
+# if clustering_result:
+#     # Menghitung purity
+#     purity = calculate_purity(clustering_result)
+
+# # Menghitung metrik untuk setiap cluster
+# cluster_metrics = []
+# for cluster_id, cluster in enumerate(clustering_result):
+#     cluster_size = len(cluster["Documents"])
+#     label_count = cluster_size  # Semua dokumen dianggap satu kelas
+#     proportion = label_count / cluster_size
+#     cluster_metrics.append({
+#         'Cluster ID': cluster_id + 1,
+#         'Number of Tweets': cluster_size,
+#         'Maximum Number of Tweets': label_count,
+#         'Proportion': proportion
+#     })
+
+# else:
+#     clustering_result = []
+#     purity = None
+#     cluster_metrics = []
+
+# @clustering.route('/purity')
+# def index():
+
 #     if 'username' not in session:
 #         return redirect(url_for('auth.login'))
 
-#     # Tampung username yang sedang login
 #     username = session['username']
-#     return render_template(
-#         current_url=request.path,
-#         username=username,
-#     )
+
+#     return render_template('purity.html', clusters=clustering_result, purity=purity, cluster_metrics=cluster_metrics, username=username)
