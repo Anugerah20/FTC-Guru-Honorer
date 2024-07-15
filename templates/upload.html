@@ -3,15 +3,126 @@
 {% block title %}Upload File Tweet Guru{% endblock %}
 
 {% block content %}
-<!-- <div class="container mt-5">
-     <h2 class="mb-3">Tweet Guru</h2>
-
-     <form class="d-flex row g-3" method="POST" action="/upload-file" enctype="multipart/form-data">
-          <div class="col-md-6 col-lg-6">
-               <label for="file" class="form-label">Unggah file csv</label>
-               <input class="form-control" type="file" name="file" id="file" required>
-               <button class="btn btn-dark my-3" type="submit">upload</button>
-          </div>
+<div class="container mt-5">
+     <h2>Clustering FTC</h2>
+     <label>Upload CSV File</label>
+     <form class="d-flex" method="post" enctype="multipart/form-data" action="{{ url_for('clustering.upload_file') }}">
+          <input class="form-control me-4" type="file" name="file" required>
+          <button class="btn btn-dark" type="submit">Upload</button>
      </form>
-</div> -->
-{% endblock %}
+
+     <!-- DELETE FORM -->
+     <form method="get" enctype="multipart/form-data" action="{{ url_for('clustering.delete_cluster') }}">
+          <button class="btn btn-dark my-3" type="submit">Hapus</button>
+     </form>
+
+     {% if json_data %}
+     <h4>Terms: {{ terms_involved | join(", ") }}</h3>
+          <h4>Jumlah Klaster: {{total_clusters}}</h2>
+               <table class="table table-striped">
+                    <thead>
+                         <tr>
+                              <th>Terms</th>
+                              <th>Documents</th>
+                              <!-- <th>Entropy Overlap</th> -->
+                              <th>Action</th>
+                         </tr>
+                    </thead>
+                    <tbody>
+                         {% for cluster in json_data %}
+                         <tr>
+                              <td>{{ cluster.Terms | join(", ") }}</td>
+                              <td>{{ cluster.Documents | join(", ") }}</td>
+                              <!-- <td>{{ cluster.EO }}</td> -->
+                              <!-- Modal Menampilkan Documents -->
+                              <td>
+                                   <!--  Button modal view documents -->
+                                   <button type="button" class="btn btn-dark" data-bs-toggle="modal"
+                                        data-bs-target="#modalFullText{{ loop.index }}">
+                                        Lihat Full Text
+                                   </button>
+
+                                   <!-- Modal Menampilkan Full Text -->
+                                   <div class="modal fade" id="modalFullText{{ loop.index }}" tabindex="-1"
+                                        aria-labelledby="modalFullText{{ loop.index }}Label" aria-hidden="true">
+                                        <div class="modal-dialog modal-lg">
+                                             <div class="modal-content">
+                                                  <div class="modal-header">
+                                                       <h5 class="modal-title" id="modalFullText{{ loop.index }}Label">
+                                                            Dokuments
+                                                            - {{cluster.Terms | join(', ')}}</h5>
+                                                       <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                            aria-label="Close"></button>
+                                                  </div>
+                                                  <div class="modal-body">
+                                                       <ul>
+                                                            {% for text in cluster.Full_Text %}
+                                                            <li>
+                                                                 {{ text }}
+                                                            </li>
+                                                            {% endfor %}
+                                                       </ul>
+                                                  </div>
+                                                  <div class="modal-footer">
+                                                       <button type="button" class="btn btn-dark"
+                                                            data-bs-dismiss="modal">Close</button>
+                                                  </div>
+                                             </div>
+                                        </div>
+                                   </div>
+                              </td>
+
+                              <!-- Modal Menampilkan Documents -->
+                              <td>
+                                   <!--  Button modal view documents -->
+                                   <button type="button" class="btn btn-dark" data-bs-toggle="modal"
+                                        data-bs-target="#modalDocuments{{ loop.index }}">
+                                        Lihat Dokumen & EO
+                                   </button>
+                                   <div class="modal fade" id="modalDocuments{{ loop.index }}" tabindex="-1"
+                                        aria-labelledby="modalDocuments{{ loop.index }}Label" aria-hidden="true">
+                                        <div class="modal-dialog modal-lg">
+                                             <div class="modal-content">
+                                                  <div class="modal-header">
+                                                       <h5 class="modal-title" id="modalDocuments{{ loop.index }}Label">
+                                                            Dokuments
+                                                            - {{cluster.Terms | join('')}}</h5>
+                                                       <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                            aria-label="Close"></button>
+                                                  </div>
+                                                  <div class="modal-body">
+
+                                                       <!-- Show all documents -->
+                                                       <p class="fw-bold">All Documents:</p>
+                                                       <small>
+                                                            {{ cluster.All_Documents | join(', ') }}
+                                                       </small>
+
+                                                       <!-- Show documents -->
+                                                       <p class="fw-bold">Documents:</p>
+                                                       <p>
+                                                            {{ cluster.Documents | join(', ') }}
+                                                       </p>
+
+                                                       <!-- Show EO -->
+                                                       <p class="fw-bold">Entropy Overlap:</p>
+                                                       <p>
+                                                            {{ cluster.EO }}
+                                                       </p>
+
+                                                  </div>
+                                                  <div class="modal-footer">
+                                                       <button type="button" class="btn btn-dark"
+                                                            data-bs-dismiss="modal">Close</button>
+                                                  </div>
+                                             </div>
+                                        </div>
+                                   </div>
+                              </td>
+                         </tr>
+                         {% endfor %}
+                    </tbody>
+               </table>
+               {% endif %}
+               {% endblock %}
+</div>
