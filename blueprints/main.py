@@ -2,18 +2,11 @@
 import math
 from flask import Blueprint, flash, render_template, request, redirect, url_for, session, jsonify
 import pandas as pd
-# from sqlalchemy import create_engine
 from extensions import mysql, db
-from models import PreprocessGuru, DataTraining, DataTesting
 from flask import current_app as app
 from dateutil import parser as date_parser
 from datetime import datetime
-# from flask_paginate import Pagination, get_page_args
 from flask_paginate import Pagination, get_page_args
-
-# Nabil (30/05/2024)
-# Import dialect mysql dari sqlalchemy
-# from sqlalchemy.dialects import mysql
 
 # Import fungsi preprocessing
 from clear_twitter_text import clear_twitter_text
@@ -25,13 +18,6 @@ from stemming import stemming
 # Upload file
 from werkzeug.utils import secure_filename
 import os
-
-# data uji dan data latih
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.metrics import accuracy_score
-from sklearn.preprocessing import LabelEncoder
-import joblib
 
 main = Blueprint('main', __name__)
 
@@ -303,6 +289,85 @@ def AllPreprocessing():
         pagination=pagination,
         )
 
+'''
+1). Route Preprocessing satu per satu,
+    cleasing atau pembersihan data
+'''
+# Fungsi untuk melakukan preprocessing text satu per satu
+# def cleasing(text):
+#     # Clear Twitter text
+#     text = clear_twitter_text(text)
+
+def normalisasi_text(text):
+    # Normalisasi
+    return normalisasi(text)
+
+def stopword_removal(text):
+    # Stopword
+    return stopword(text)
+
+def tokenization(text):
+    # Tokenized
+    return tokenized(text)
+
+def stemming_text(text):
+    # Stemming
+    tokens = tokenized(text)
+    return stemming(tokens)
+
+@main.route('/show-cleasing', methods=['GET'])
+def show_cleasing():
+
+    data_path = "./dataset/guru_honorer.csv"
+    df = pd.read_csv(data_path)
+    df['full_text'] = df['full_text'].apply(clear_twitter_text)
+    return render_template('preprocessing-2.html', data=df.to_dict(orient='records'))
+'''
+2). Route Preprocessing satu per satu,
+    normalisasai mengubah kata-kata
+    yang tidak baku menjadi baku
+'''
+@main.route('/show-normalisasi', methods=['GET'])
+def show_normalisasi():
+    data_path = "./dataset/guru_honorer.csv"
+    df = pd.read_csv(data_path)
+    result = df['full_text'] = df['full_text'].apply(normalisasi_text)
+    return render_template('preprocessing.html', data=result.to_dict(orient='records'))
+
+'''
+3). Route Preprocessing satu per satu,
+    stopword menghapus kata-kata yang
+    tidak memiliki makna
+'''
+@main.route('/show-stopword', methods=['GET'])
+def show_stopword():
+    data_path = "./dataset/guru_honorer.csv"
+    df = pd.read_csv(data_path)
+    df['full_text'] = df['full_text'].apply(stopword_removal)
+    return render_template('preprocessing.html', data=df.to_dict(orient='records'))
+
+'''
+4). Route Preprocessing satu per satu,
+    tokenized mengubah kalimat menjadi kata
+'''
+@main.route('/show-tokenized', methods=['GET'])
+def show_tokenized():
+    data_path = "./dataset/guru_honorer.csv"
+    df = pd.read_csv(data_path)
+    df['full_text'] = df['full_text'].apply(tokenization)
+    return render_template('preprocessing.html', data=df.to_dict(orient='records'))
+
+'''
+5). Route Preprocessing satu per satu,
+    stemming mengubah kata-kata menjadi kata dasar
+'''
+@main.route('/show-stemming', methods=['GET'])
+def show_stemming():
+    data_path = "./dataset/guru_honorer.csv"
+    df = pd.read_csv(data_path)
+    df['full_text'] = df['full_text'].apply(stemming_text)
+    return render_template('preprocessing.html', data=df.to_dict(orient='records'))
+
 # Route menyimpan file CSV ke Database
 @main.route('/save-csv-to-database')
 def saveCSVToDatabase():
@@ -323,126 +388,3 @@ def DataTraining():
     df = pd.read_csv('dataset/data_training_guru_honorer.csv')
     df.to_sql('data_training', con=db.engine, if_exists='append', index=False)
     return 'File CSV data training berhasil disimpan ke database'
-
-# Route menampilkan data training
-@main.route('/all-training', methods=['GET'])
-def AllTraining():
-    if 'username' not in session:
-        return redirect(url_for('auth.login'))
-
-    data = DataTraining.query.all()
-    # Menampilkan total data
-    total_data = len(data)
-
-    username = session['username']
-    return render_template('data-training.html', data=data, total_data=total_data, username=username)
-
-# Route training model
-@main.route('/training-model', methods=['GET','POST'])
-def trainModel():
-    if 'username' not in session:
-        return redirect(url_for('auth.login'))
-
-    training_data = DataTraining.query.all()
-
-    # Mengambil full_text dan category dari data training
-    texts = [data.full_text for data in training_data]
-    labels = [data.category for data in training_data]
-
-    # Preprocessing data
-    vectorizer = CountVectorizer()
-    X_train = vectorizer.fit_transform(texts)
-    encoder = LabelEncoder()
-    y_train = encoder.fit_transform(labels)
-
-    # Inisialisasi dan latih model
-    model = MultinomialNB()
-    model.fit(X_train, y_train)
-
-    # Simpan model ke joblib
-    joblib.dump(model, 'model.pkl')
-    joblib.dump(vectorizer, 'vectorizer.pkl')
-    joblib.dump(encoder, 'encoder.pkl')
-
-    username = session['username']
-
-    # return jsonify({'message': 'Model berhasil dilatih'})
-    return render_template('train-test.html', current_url=request.path ,username=username)
-
-# Route data testing menyimpan file CSV ke database
-@main.route('/data-testing-csv')
-def DataTesting():
-    df = pd.read_csv('dataset/data_testing_guru_honorer.csv')
-    df.to_sql('data_testing', con=db.engine, if_exists='append', index=False)
-    return 'File CSV data testing berhasil disimpan ke database'
-
-# Route menampilkan data testing
-@main.route('/all-testing', methods=['GET'])
-def AllTesting():
-    if 'username' not in session:
-        return redirect(url_for('auth.login'))
-
-    data = DataTesting.query.all()
-    # Menampilkan total data training
-    total_data = len(data)
-
-    username = session['username']
-    return render_template('data-testing.html', data=data, total_data=total_data, username=username)
-
-# Route testing model
-@main.route('/testing-model', methods=['GET','POST'])
-def testingModel():
-    testing_data = DataTesting.query.all()
-
-    # Mengambil full_text dan category dari data training
-    texts = [data.full_text for data in testing_data]
-    labels = [data.categories for data in testing_data]
-
-    # Preprocessing data
-    vectorizer = joblib.load('vectorizer.pkl')
-    X_test = vectorizer.transform(texts)
-    encoder = joblib.load('encoder.pkl')
-    y_test = encoder.transform(labels)
-
-    # testing model
-    model = joblib.load('model.pkl')
-    # Prediksi
-    y_pred = model.predict(X_test)
-    # Evaluasi model
-    accuracy = accuracy_score(y_test, y_pred)
-
-    # return render_template('train-model.html', accuracy=accuracy)
-    return jsonify({'accuracy': accuracy})
-
-
-# Labeling menggunakan kamus
-# data = pd.read_csv('dataset/training_data_belum_dilabeling.csv')
-
-# # Membaca kamus lexicon positif dan negatif
-# with open('dataset/kamus_negatif.txt', 'r') as file:
-#     positive_words = file.read().splitlines()
-
-# with open('dataset/kamus_positif.txt', 'r') as file:
-#     negative_words = file.read().splitlines()
-
-# Fungsi untuk menentukan kategori kalimat
-# def categorize_sentence(sentence):
-#     positive_count = sum(1 for word in sentence.split() if word in positive_words)
-#     negative_count = sum(1 for word in sentence.split() if word in negative_words)
-
-#     if positive_count > negative_count:
-#         return 'Positif'
-#     elif positive_count < negative_count:
-#         return 'Negatif'
-#     else:
-#         return 'Netral'
-
-# @main.route('/kamus-training', methods=['GET', 'POST'])
-# def labeling_kamus():
-#     if request.method == 'POST':
-#         sentence = request.form['sentence']
-#         category = categorize_sentence(sentence)  # Call the function
-#         return render_template('kamus-training.html', sentence=sentence, category=category)
-#     else:
-#         return render_template('kamus-training.html')
-
