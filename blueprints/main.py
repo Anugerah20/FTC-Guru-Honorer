@@ -78,7 +78,7 @@ def parse_and_insert_csv(file_path):
             try:
                 created_at_obj = datetime.strptime(created_at, "%a %b %d %H:%M:%S %z %Y")
             except ValueError:
-                print("Tidak dapat mem-parse created_at:", created_at)
+                # print("Tidak dapat mem-parse created_at:", created_at)
                 continue
 
             # Cek apakah data sudah ada berdasarkan id_str
