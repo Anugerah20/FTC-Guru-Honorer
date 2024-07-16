@@ -693,7 +693,7 @@ import re
 
 # Dictionary of replacements
 replacements = {'krn': 'karena',
-                'blm': 'belom',
+                'blm': 'belum',
                 'hrs': 'harus',
                 'bkn': 'bukan',
                 'yg': 'yang',
