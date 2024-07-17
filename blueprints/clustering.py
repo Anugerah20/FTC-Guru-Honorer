@@ -1,6 +1,6 @@
 '''
-Kodingan Terbaru Menggunakan Metode
-Frequent Term Based Clustering (FTC)
+Metode Frequent Term
+Based Clustering (FTC)
 '''
 
 import random
