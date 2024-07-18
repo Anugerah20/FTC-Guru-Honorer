@@ -6,7 +6,8 @@
 
 <body>
      <div class="container">
-          <h2>Hasil Purity</h2>
+          <h2 class="my-4">Hasil Purity</h2>
+          <span class="badge rounded-pill text-bg-dark mb-2">Purity Score: {{ purity }}</span>
           {% if clusters %}
           <table class="table table-bordered">
                <thead>
@@ -28,7 +29,6 @@
                     {% endfor %}
                </tbody>
           </table>
-          <p>Purity Score: {{ purity }}</p>
           {% else %}
           <p>Belum ada data yang diuji.</p>
           {% endif %}
