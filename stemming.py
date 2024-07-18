@@ -13,8 +13,3 @@ def stemming(text_cleaning):
         do.append(dt)
     d_clean = " ".join(do)
     return d_clean
-
-# Editor: Nabil 
-# def stemming(tokens):
-#     stemmed_tokens = [stemmer.stem(token) for token in tokens]
-#     return " ".join(stemmed_tokens)
