@@ -2,7 +2,6 @@
 Metode Frequent Term
 Based Clustering (FTC)
 '''
-
 import random
 from itertools import combinations
 from flask import Blueprint, render_template, redirect, session, request, url_for, flash, jsonify
@@ -143,7 +142,7 @@ def process_cluster(data):
         json_data.append({
             'Terms': terms_list,
             'Documents': documents_to_show,
-            # 'Full_Text': full_text,
+            'Full_Text': full_text,
             'EO': entropy,
         })
 
@@ -161,7 +160,7 @@ def process_cluster(data):
 #     "hidup bagi dunia mana pengiri memang fakta kaya gitu luar banyak guru honorer gaji kecil guru guru pelosok lebih banyak perlu hadap liat cuman orang untung naik pns"
 # ]
 
-# Menampilkan hasil testing
+# # Menampilkan hasil testing
 # json_data, terms_involved = process_cluster(data)
 # print(json_data)
 
