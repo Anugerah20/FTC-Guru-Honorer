@@ -10,7 +10,18 @@
           integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
      <!-- Link Fontawesome -->
      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+     <!-- Style css -->
+     <style>
+          .bottom {
+               display: flex;
+               justify-content: space-between;
+               align-items: center;
+          }
+     </style>
 </head>
+
+<a id="top"></a>
 
 <body>
      <!-- Navigasi -->
@@ -88,9 +99,10 @@
      {% block content %}{% endblock %}
 
      <!-- Footer -->
-     <footer>
-          <div class="container bottom">
+     <footer class="d-flex">
+          <div class="container bottom d-flex flex-column">
                <p>&copy; 2024 - Made in 💖 Nabil</p>
+               <a href="#top" class="d-inline text-dark mb-5">back to top</a>
           </div>
      </footer>
 
