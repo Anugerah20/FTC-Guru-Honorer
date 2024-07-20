@@ -4,7 +4,7 @@ Based Clustering (FTC)
 '''
 import random
 from itertools import combinations
-from flask import Blueprint, render_template, redirect, session, request, url_for, flash, jsonify
+from flask import Blueprint, render_template, redirect, session, request, url_for, flash, jsonify, url_for
 import numpy as np
 from math import log, sqrt
 import math
@@ -210,7 +210,8 @@ def upload_file():
                 'upload.html',
                 json_data=json_data,
                 terms_involved=terms_involved,
-                username=username
+                username=username,
+                current_url=request.path,
                 )
 
     username = session.get('username')
@@ -218,7 +219,8 @@ def upload_file():
         'upload.html',
         json_data=None,
         terms_involved=None,
-        username=username
+        username=username,
+        current_url=request.path,
         )
 
 # Melihat hasil klastering FTC
@@ -240,7 +242,14 @@ def show_results():
         total_clusters = len(json_data)
 
         username = session['username']
-    return render_template('upload.html', json_data=json_data, terms_involved=terms_involved, total_clusters=total_clusters, username=username)
+    return render_template(
+        'upload.html',
+        json_data=json_data,
+        terms_involved=terms_involved,
+        total_clusters=total_clusters,
+        username=username,
+        current_url=request.path,
+        )
 
 # Membuat fungsi khusus untuk menghapus file csv dan json
 def delete_file(file_path, file_type):
@@ -350,4 +359,11 @@ def index():
         cluster_metrics = []
         flash('Proses pengujian belum dilakukan atau file JSON tidak ditemukan / kosong.', 'danger')
 
-    return render_template('purity.html', clusters=clustering_result, purity=purity, cluster_metrics=cluster_metrics, username=username)
+    return render_template(
+        'purity.html',
+        clusters=clustering_result,
+        purity=purity,
+        cluster_metrics=cluster_metrics,
+        username=username,
+        current_url=request.path
+        )

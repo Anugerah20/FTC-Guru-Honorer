@@ -18,6 +18,15 @@
                justify-content: space-between;
                align-items: center;
           }
+
+          .bottom a {
+               text-decoration: none;
+          }
+
+          .bottom a:hover {
+               font-weight: bold;
+               transition: all 0.3s ease;
+          }
      </style>
 </head>
 
@@ -48,9 +57,9 @@
                               </li>
 
                               </li>
-                              <!-- NEW -->
+                              <!-- REQUEST ftc OR ftc/result -->
                               <li class="nav-item">
-                                   <a class="nav-link {% if current_url == '/ftc' %}active{% endif %}"
+                                   <a class="nav-link {% if current_url == '/ftc' or current_url == '/ftc/results' %}active{% endif %}"
                                         href="/ftc">Kluster FTC</a>
                               </li>
 
@@ -102,7 +111,10 @@
      <footer class="d-flex">
           <div class="container bottom d-flex flex-column">
                <p>&copy; 2024 - Made in 💖 Nabil</p>
-               <a href="#top" class="d-inline text-dark mb-5">back to top</a>
+               <!-- Kondisi menyembunyikan back to top dari halaman login dan register -->
+               {% if request.path != '/login' and request.path != '/register' %}
+               <a href="#top" class="d-inline text-dark mb-5">Gulir ke atas</a>
+               {% endif %}
           </div>
      </footer>
 
