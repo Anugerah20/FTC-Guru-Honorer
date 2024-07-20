@@ -24,8 +24,8 @@
                          <tr>
                               <th>Terms</th>
                               <th>Documents</th>
-                              <!-- <th>Entropy Overlap</th> -->
-                              <th>Action</th>
+                              <th>Show Full Text</th>
+                              <th>Show Documents & EO</th>
                          </tr>
                     </thead>
                     <tbody>
@@ -86,18 +86,11 @@
                                                   <div class="modal-header">
                                                        <h5 class="modal-title" id="modalDocuments{{ loop.index }}Label">
                                                             Dokuments
-                                                            - {{cluster.Terms | join('')}}</h5>
+                                                            - {{cluster.Terms | join(', ')}}</h5>
                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                             aria-label="Close"></button>
                                                   </div>
                                                   <div class="modal-body">
-
-                                                       <!-- Show all documents -->
-                                                       <p class="fw-bold">All Documents:</p>
-                                                       <small>
-                                                            {{ cluster.All_Documents | join(', ') }}
-                                                       </small>
-
                                                        <!-- Show documents -->
                                                        <p class="fw-bold">Documents:</p>
                                                        <p>
