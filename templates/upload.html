@@ -22,6 +22,7 @@
                <table class="table table-striped">
                     <thead>
                          <tr>
+                              <th>Iterasi</th>
                               <th>Terms</th>
                               <th>Documents</th>
                               <th>Show Full Text</th>
@@ -31,6 +32,7 @@
                     <tbody>
                          {% for cluster in json_data %}
                          <tr>
+                              <td>{{ cluster.Iteration }}</td>
                               <td>{{ cluster.Terms | join(", ") }}</td>
                               <td>{{ cluster.Documents | join(", ") }}</td>
                               <!-- <td>{{ cluster.EO }}</td> -->
