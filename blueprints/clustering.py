@@ -401,6 +401,22 @@ def process_cluster(data):
 
     return json_data, terms_involved
 
+# # Testing clustering ftc
+# data = [
+#     "guru honorer rendahin banyak anak baca nulis ngitung kerja mulia kaya gitu bisa nya bina memang gaji guru honorer rendah salah guru salah sistemasi perintah aja kurang apresiasi guru honorer",
+#     "kakak honorer semenjak lulus sarjana gaji guru kata cuma isi bensin",
+#     "allah padahal banyak guru guru honorer lebih derita guru guru influencer anggar pakai naikin gaji guru honorer acara begini",
+#     "semua guru asn semua guru gaji pokok layak tunjang banyak guru gaji bawah rupiah bulan sebut guru honorer",
+#     "fakta banyak banget guru honorer sepuh tetep dapat gaji bawah umr padahal guru salah kerja puji coba guru apa dunia malah pandang rendah",
+#     "memang rendah dulu sempat honorer ajar bahasa inggris smp jam ribu alhamdulillah bulan ribuan lebih banyak gaji dari ajar prima agama bulan juta sering gantiin guru tidak hadir",
+#     "itu tuh emang fakta kirim mama guru honorer gaji bulan paling banyak juta",
+#     "hidup bagi dunia mana pengiri memang fakta kaya gitu luar banyak guru honorer gaji kecil guru guru pelosok lebih banyak perlu hadap liat cuman orang untung naik pns"
+# ]
+
+# # Menampilkan hasil testing
+# json_data, terms_involved = process_cluster(data)
+# print(json_data)
+
 UPLOAD_FOLDER = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
