@@ -397,6 +397,8 @@ def process_cluster(data):
             'EO': entropy,
         })
 
+        iteration += 1
+
     return json_data, terms_involved
 
 UPLOAD_FOLDER = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads'
@@ -499,7 +501,7 @@ def delete_cluster():
         csv_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/hasil_preprocesing_guru2.csv'
         delete_file(csv_file_path, 'File CSV')
 
-        json_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_clusterrr.json'
+        json_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_clusterrr2.json'
         delete_file(json_file_path, 'File JSON')
 
         cursor.close()
