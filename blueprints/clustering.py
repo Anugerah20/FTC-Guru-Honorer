@@ -17,10 +17,10 @@ import operator
 
 clustering = Blueprint('clustering', __name__)
 
-# '''
-# FTC Frequent Term Based Clustering
-# TERBARU
-# '''
+'''
+FTC Frequent Term Based Clustering
+TERBARU VERSI 1
+'''
 # # Fungsi untuk koneksi ke tabel_bersih
 # def db_connect(host, user, password, database):
 #     conn = mysql.connector.connect(
@@ -301,6 +301,14 @@ clustering = Blueprint('clustering', __name__)
 #         print(f"Error: {e}")
 #         return jsonify({'error': str(e)})
 
+# =========================================================================== FTC VERSI 2 ====================================================
+
+'''
+FTC Frequent Term Based Clustering
+TERBARU VERSI 2
+'''
+
+'''
 def db_connect(host, user, password, database):
     conn = mysql.connector.connect(
         host=host,
@@ -533,7 +541,243 @@ def delete_cluster():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({'error': str(e)})
+'''
 
+# =========================================================================== FTC VERSI 3 ====================================================
+
+def db_connect(host, user, password, database):
+    conn = mysql.connector.connect(
+        host=host,
+        user=user,
+        password=password,
+        database=database
+    )
+    cursor = conn.cursor()
+    return conn, cursor
+
+def fetch_data():
+    conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
+    cursor.execute("SELECT full_text FROM bersih")
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return [row[0] for row in rows]
+
+def save_text_to_db(texts):
+    conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
+    cursor.executemany("INSERT INTO bersih (full_text) VALUES (%s)", [(text,) for text in texts])
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+def process_cluster(data):
+    all_text = ' '.join(data)
+    all_text = re.sub(r'\baja\b', 'saja', all_text)
+    all_text = re.sub(r'\b(?:yang|dan|tidak)\b', '', all_text)
+    all_text = re.sub(r'\d+', '', all_text)
+
+    words = all_text.split()
+    word_counts = Counter(words)
+    total_words = sum(word_counts.values())
+    word_probabilities = {word: count / total_words for word, count in word_counts.items()}
+    sorted_word_probabilities = dict(sorted(word_probabilities.items(), key=lambda item: item[1], reverse=True)[:10])
+
+    clusters = defaultdict(set)
+    top_terms = list(sorted_word_probabilities.keys())
+    min_support = 4
+
+    for index, text in enumerate(data):
+        words = text.split()
+        doc_id = f'D{index+1}'
+
+        for word in words:
+            if word in top_terms and word:
+                clusters[word].add(doc_id)
+
+        for term1, term2 in combinations(top_terms, 2):
+            if term1 in words and term2 in words:
+                clusters[f'{term1}, {term2}'].add(doc_id)
+
+        for term1, term2, term3 in combinations(top_terms, 3):
+            if term1 in words and term2 in words and term3 in words:
+                clusters[f'{term1}, {term2}, {term3}'].add(doc_id)
+
+    cluster_candidates = [(terms, list(docs)) for terms, docs in clusters.items() if len(docs) >= min_support]
+
+    def calculate_entropy_overlap(docs):
+        term_count = Counter()
+        total_terms = 0
+        total_docs = len(docs)
+
+        for doc in docs:
+            text = data[int(doc[1:]) - 1]
+            words = text.split()
+            term_count.update(words)
+            total_terms += len(words)
+
+        entropy = 0
+        for term, count in term_count.items():
+            probability = count / total_terms
+            entropy -= probability * math.log(probability, 2)
+
+        return entropy / total_docs
+
+    json_data = []
+    terms_involved = set()
+    iteration = 1
+    selected_cluster = None
+
+    for terms, docs in cluster_candidates:
+        terms_list = terms.split(', ')
+        terms_involved.update(terms_list)
+        entropy = calculate_entropy_overlap(docs)
+        full_text = [data[int(doc[1:]) - 1] for doc in docs]
+
+        cluster_info = {
+            'Iteration': f'Iterasi ke-{iteration}',
+            'Terms': terms_list,
+            'Documents': docs,
+            'Full_Text': full_text,
+            'EO': entropy,
+            'selected': False  # Default to not selected
+        }
+
+        # Determine if this cluster is selected
+        if selected_cluster is None or entropy < selected_cluster['EO']:
+            selected_cluster = cluster_info
+
+        json_data.append(cluster_info)
+        iteration += 1
+
+    if selected_cluster:
+        selected_cluster['selected'] = True
+
+    return json_data, terms_involved, selected_cluster
+
+
+UPLOAD_FOLDER = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'csv'}
+
+@clustering.route('/ftc', methods=['GET', 'POST'])
+def upload_file():
+    if 'username' not in session:
+        return redirect(url_for('auth.login'))
+
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('Tidak ada file yang dipilih', 'danger')
+            return redirect(request.url)
+        file = request.files['file']
+        if file.filename == '':
+            flash('File belum dipilih', 'danger')
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(file_path)
+            full_text = pd.read_csv(file_path)
+            data = full_text['full_text'].tolist()
+            json_data, terms_involved, selected_cluster = process_cluster(data)
+
+            with open(os.path.join(UPLOAD_FOLDER, 'ftc_clusterrr3.json'), 'w') as json_file:
+                json.dump(json_data, json_file, indent=4)
+
+            save_text_to_db(data)
+
+        username = session.get('username')
+        return render_template(
+                'upload.html',
+                json_data=json_data,
+                terms_involved=terms_involved,
+                selected_cluster=selected_cluster,
+                username=username,
+                current_url=request.path,
+                )
+
+    username = session.get('username')
+    return render_template(
+        'upload.html',
+        json_data=None,
+        terms_involved=None,
+        selected_cluster=None,
+        username=username,
+        current_url=request.path,
+        )
+
+@clustering.route('/ftc/results', methods=['GET'])
+def show_results():
+    if 'username' not in session:
+        return redirect(url_for('auth.login'))
+
+    with open(os.path.join(UPLOAD_FOLDER, 'ftc_clusterrr3.json'), 'r') as json_file:
+        json_data = json.load(json_file)
+        terms_involved = set()
+        selected_cluster = None
+
+        for item in json_data:
+            terms_involved.update(item['Terms'])
+            if item.get('selected'):
+                selected_cluster = item
+
+        total_clusters = len(json_data)
+        username = session['username']
+
+    return render_template(
+        'upload.html',
+        json_data=json_data,
+        terms_involved=terms_involved,
+        total_clusters=total_clusters,
+        selected_cluster=selected_cluster,
+        username=username,
+        current_url=request.path,
+        )
+
+def delete_file(file_path, file_type):
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            logging.info(f'File {file_type} berhasil dihapus: {file_path}')
+            flash(f'File {file_type} berhasil dihapus','success')
+        else:
+            logging.warning(f'File {file_type} tidak ditemukan: {file_path}')
+            print(f'File {file_type} tidak ditemukan','warning')
+    except Exception as e:
+        logging.error(f'Gagal menghapus {file_type}: {file_path} - {e}')
+        print(f'Gagal menghapus {file_type}','danger')
+
+@clustering.route('/delete-clustering-ftc', methods=['GET', 'DELETE'])
+def delete_cluster():
+    try:
+        conn, cursor = db_connect(host="localhost", user="root", password="", database="guru_honorer")
+
+        cursor.execute("UPDATE bersih SET full_text = ''")
+        conn.commit()
+
+        cursor.execute("DELETE FROM bersih WHERE full_text = ''")
+        conn.commit()
+
+        csv_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/hasil_preprocesing_guru2.csv'
+        delete_file(csv_file_path, 'File CSV')
+
+        json_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_clusterrr3.json'
+        delete_file(json_file_path, 'File JSON')
+
+        return redirect(url_for('clustering.upload_file'))
+
+    except Exception as e:
+        logging.error(f'Gagal menghapus data dan file JSON: {e}')
+        flash(f'Gagal menghapus data dan file JSON', 'danger')
+        return redirect(url_for('clustering.upload_file'))
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 # Fungsi untuk memuat data JSON dari file
 def load_json_data(filepath):
@@ -564,7 +808,7 @@ def index():
         return redirect(url_for('auth.login'))
 
     username = session['username']
-    filepath = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_clusterrr2.json'
+    filepath = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_clusterrr3.json'
     clustering_result, error_message = load_json_data(filepath)
 
     if clustering_result:
