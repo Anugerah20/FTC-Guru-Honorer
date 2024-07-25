@@ -1,125 +1,59 @@
 {% extends 'base.html' %}
 
-{% block title %}Upload File Tweet Guru{% endblock %}
+{% block title %}Clustering FTC{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
      <h2>Clustering FTC</h2>
-     <label>Upload CSV File</label>
-     <form class="d-flex" method="post" enctype="multipart/form-data" action="{{ url_for('clustering.upload_file') }}">
-          <input class="form-control me-4" type="file" name="file" required>
-          <button class="btn btn-dark" type="submit">Upload</button>
-     </form>
 
-     <!-- DELETE FORM -->
-     <form method="get" enctype="multipart/form-data" action="{{ url_for('clustering.delete_cluster') }}">
-          <button class="btn btn-dark my-3" type="submit">Hapus</button>
-     </form>
+     <style>
+          .selected-cluster {
+               font-weight: bold;
+          }
+     </style>
 
-     {% if json_data %}
-     <h4>Terms: {{ terms_involved | join(", ") }}</h3>
-          <h4>Jumlah Klaster: {{total_clusters}}</h2>
-               <table class="table table-striped">
-                    <thead>
-                         <tr>
-                              <th>Iterasi</th>
-                              <th>Terms</th>
-                              <!-- <th>Documents</th> -->
-                              <th>Show Full Text</th>
-                              <th>Show Documents & EO</th>
-                         </tr>
-                    </thead>
-                    <tbody>
-                         {% for cluster in json_data %}
-                         <tr>
-                              <td>{{ cluster.Iteration }}</td>
-                              <td>{{ cluster.Terms | join(", ") }}</td>
-                              <!-- <td>{{ cluster.Documents | join(", ") }}</td> -->
-                              <!-- <td>{{ cluster.EO }}</td> -->
+     <!-- Tombol untuk menghapus data JSON, CSV, dan isi database table bersih -->
+     <label>Hapus Data</h3>
+          <form action="{{ url_for('clustering.delete_cluster') }}" method="POST">
+               <button class="btn btn-dark my-3" type="submit">Hapus</button>
+          </form>
 
+          {% if json_data %}
+          <table class="table table-striped">
+               <thead>
+                    <tr>
+                         <th>Iteration</th>
+                         <th>Terms</th>
+                         <th>Documents</th>
+                         <th>Full Text</th>
+                         <th>EO</th>
+                    </tr>
+               </thead>
+               <tbody>
+                    {% for item in json_data %}
+                    <tr class="{% if item.selected %}selected-cluster{% endif %}">
+                         <td>{{ item.Iteration }}</td>
+                         <td>{{ item.Terms | join(', ') }}</td>
+                         <td>{{ item.Documents | join(', ') }}</td>
+                         <td>{{ item.Full_Text | join(', ') }}</td>
+                         <td>{{ item.EO }}</td>
+                    </tr>
+                    {% endfor %}
+               </tbody>
+          </table>
 
-                              <!-- Modal Menampilkan Documents -->
-                              <td>
-                                   <!--  Button modal view documents -->
-                                   <button type="button" class="btn btn-dark" data-bs-toggle="modal"
-                                        data-bs-target="#modalFullText{{ loop.index }}">
-                                        Lihat Full Text
-                                   </button>
+          {% elif 'username' in session %}
+          <label>Upload CSV File</label>
+          <form class="d-flex" action="{{ url_for('clustering.upload_file') }}" method="POST"
+               enctype="multipart/form-data">
+               <input class="form-control me-4" type="file" name="file" id="file" accept=".csv">
+               <button class="btn btn-dark" type="submit">Upload</button>
+          </form>
 
-                                   <!-- Modal Menampilkan Full Text -->
-                                   <div class="modal fade" id="modalFullText{{ loop.index }}" tabindex="-1"
-                                        aria-labelledby="modalFullText{{ loop.index }}Label" aria-hidden="true">
-                                        <div class="modal-dialog modal-lg">
-                                             <div class="modal-content">
-                                                  <div class="modal-header">
-                                                       <h5 class="modal-title" id="modalFullText{{ loop.index }}Label">
-                                                            Full Text
-                                                            - {{cluster.Terms | join(', ')}}</h5>
-                                                       <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                            aria-label="Close"></button>
-                                                  </div>
-                                                  <div class="modal-body">
-                                                       <ul>
-                                                            {% for text in cluster.Full_Text %}
-                                                            <li>
-                                                                 {{ text }}
-                                                            </li>
-                                                            {% endfor %}
-                                                       </ul>
-                                                  </div>
-                                                  <div class="modal-footer">
-                                                       <button type="button" class="btn btn-dark"
-                                                            data-bs-dismiss="modal">Close</button>
-                                                  </div>
-                                             </div>
-                                        </div>
-                                   </div>
-                              </td>
+          {% else %}
 
-                              <!-- Modal Menampilkan Documents -->
-                              <td>
-                                   <!--  Button modal view documents -->
-                                   <button type="button" class="btn btn-dark" data-bs-toggle="modal"
-                                        data-bs-target="#modalDocuments{{ loop.index }}">
-                                        Lihat Dokumen & EO
-                                   </button>
-                                   <div class="modal fade" id="modalDocuments{{ loop.index }}" tabindex="-1"
-                                        aria-labelledby="modalDocuments{{ loop.index }}Label" aria-hidden="true">
-                                        <div class="modal-dialog modal-lg">
-                                             <div class="modal-content">
-                                                  <div class="modal-header">
-                                                       <h5 class="modal-title" id="modalDocuments{{ loop.index }}Label">
-                                                            Dokuments & EO
-                                                            - {{cluster.Terms | join(', ')}}</h5>
-                                                       <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                            aria-label="Close"></button>
-                                                  </div>
-                                                  <div class="modal-body">
-                                                       <!-- Show documents -->
-                                                       <p class="fw-bold">Documents:</p>
-                                                       <p>
-                                                            {{ cluster.Documents | join(', ') }}
-                                                       </p>
+          <p>Silakan <a href="{{ url_for('auth.login') }}">masuk</a> untuk mengakses halaman ini.</p>
 
-                                                       <!-- Show EO -->
-                                                       <p class="fw-bold">Entropy Overlap:</p>
-                                                       <p>
-                                                            {{ cluster.EO }}
-                                                       </p>
-
-                                                  </div>
-                                                  <div class="modal-footer">
-                                                       <button type="button" class="btn btn-dark"
-                                                            data-bs-dismiss="modal">Close</button>
-                                                  </div>
-                                             </div>
-                                        </div>
-                                   </div>
-                              </td>
-                         </tr>
-                         {% endfor %}
-                    </tbody>
-               </table>
-               {% endif %}
-               {% endblock %}
+          {% endif %}
+          {% endblock %}
 </div>
