@@ -13,47 +13,46 @@
      </style>
 
      <!-- Tombol untuk menghapus data JSON, CSV, dan isi database table bersih -->
-     <label>Hapus Data</h3>
-          <form action="{{ url_for('clustering.delete_cluster') }}" method="POST">
-               <button class="btn btn-dark my-3" type="submit">Hapus</button>
-          </form>
+     <label>Hapus Data</label>
+     <form action="{{ url_for('clustering.delete_cluster') }}" method="get" enctype="multipart/form-data">
+          <button class="btn btn-dark my-3" type="submit">Hapus</button>
+     </form>
 
-          {% if json_data %}
-          <table class="table table-striped">
-               <thead>
-                    <tr>
-                         <th>Iteration</th>
-                         <th>Terms</th>
-                         <th>Documents</th>
-                         <th>Full Text</th>
-                         <th>EO</th>
-                    </tr>
-               </thead>
-               <tbody>
-                    {% for item in json_data %}
-                    <tr class="{% if item.selected %}selected-cluster{% endif %}">
-                         <td>{{ item.Iteration }}</td>
-                         <td>{{ item.Terms | join(', ') }}</td>
-                         <td>{{ item.Documents | join(', ') }}</td>
-                         <td>{{ item.Full_Text | join(', ') }}</td>
-                         <td>{{ item.EO }}</td>
-                    </tr>
-                    {% endfor %}
-               </tbody>
-          </table>
+     {% if json_data %}
+     <table class="table table-striped">
+          <thead>
+               <tr>
+                    <th>Iteration</th>
+                    <th>Terms</th>
+                    <th>Documents</th>
+                    <th>Full Text</th>
+                    <th>EO</th>
+               </tr>
+          </thead>
+          <tbody>
+               {% for item in json_data %}
+               <tr class="{% if item.selected %}selected-cluster{% endif %}">
+                    <td>{{ item.Iteration }}</td>
+                    <td>{{ item.Terms | join(', ') }}</td>
+                    <td>{{ item.Documents | join(', ') }}</td>
+                    <td>{{ item.Full_Text | join(', ') }}</td>
+                    <td>{{ item.EO }}</td>
+               </tr>
+               {% endfor %}
+          </tbody>
+     </table>
 
-          {% elif 'username' in session %}
-          <label>Upload CSV File</label>
-          <form class="d-flex" action="{{ url_for('clustering.upload_file') }}" method="POST"
-               enctype="multipart/form-data">
-               <input class="form-control me-4" type="file" name="file" id="file" accept=".csv">
-               <button class="btn btn-dark" type="submit">Upload</button>
-          </form>
+     {% elif 'username' in session %}
+     <label>Upload CSV File</label>
+     <form class="d-flex" action="{{ url_for('clustering.upload_file') }}" method="POST" enctype="multipart/form-data">
+          <input class="form-control me-4" type="file" name="file" id="file" accept=".csv">
+          <button class="btn btn-dark" type="submit">Upload</button>
+     </form>
 
-          {% else %}
+     {% else %}
 
-          <p>Silakan <a href="{{ url_for('auth.login') }}">masuk</a> untuk mengakses halaman ini.</p>
+     <p>Silakan <a href="{{ url_for('auth.login') }}">masuk</a> untuk mengakses halaman ini.</p>
 
-          {% endif %}
-          {% endblock %}
+     {% endif %}
+     {% endblock %}
 </div>
