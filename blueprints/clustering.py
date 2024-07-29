@@ -545,6 +545,7 @@ def delete_cluster():
 
 # =========================================================================== FTC VERSI 3 ====================================================
 
+# Fungsi untuk menghubungkan ke database
 def db_connect(host, user, password, database):
     conn = mysql.connector.connect(
         host=host,
@@ -555,6 +556,7 @@ def db_connect(host, user, password, database):
     cursor = conn.cursor()
     return conn, cursor
 
+# Fungsi untuk memanggil data dari tabel bersih
 def fetch_data():
     conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
     cursor.execute("SELECT full_text FROM bersih")
@@ -563,6 +565,7 @@ def fetch_data():
     conn.close()
     return [row[0] for row in rows]
 
+# Fungsi untuk menyimpan data ke tabel bersih
 def save_text_to_db(texts):
     conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
     cursor.executemany("INSERT INTO bersih (full_text) VALUES (%s)", [(text,) for text in texts])
@@ -570,6 +573,7 @@ def save_text_to_db(texts):
     cursor.close()
     conn.close()
 
+# Fungsi untuk menghitung klaster
 def process_cluster(data):
     all_text = ' '.join(data)
     all_text = re.sub(r'\baja\b', 'saja', all_text)
@@ -586,6 +590,7 @@ def process_cluster(data):
     top_terms = list(sorted_word_probabilities.keys())
     min_support = 4
 
+    # Membentuk klaster berdasarkan kombinasi term
     for index, text in enumerate(data):
         words = text.split()
         doc_id = f'D{index+1}'
@@ -627,6 +632,7 @@ def process_cluster(data):
     iteration = 1
     selected_cluster = None
 
+    # Proses iterasi klaster untuk membentuk file JSON yang menyimpan hasil klaster terpilih
     for terms, docs in cluster_candidates:
         terms_list = terms.split(', ')
         terms_involved.update(terms_list)
@@ -642,7 +648,8 @@ def process_cluster(data):
             'selected': False  # Default to not selected
         }
 
-        # Determine if this cluster is selected
+        # Memilih klaster dengan nilai entropy terendah
+        # Sebagai klaster terpilih
         if selected_cluster is None or entropy < selected_cluster['EO']:
             selected_cluster = cluster_info
 
@@ -654,14 +661,16 @@ def process_cluster(data):
 
     return json_data, terms_involved, selected_cluster
 
-
+# Pilih folder untuk menyimpan file upload
 UPLOAD_FOLDER = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
+# Hanya mengizinkan file csv
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'csv'}
 
+# Route klaster untuk proses upload file csv
 @clustering.route('/ftc', methods=['GET', 'POST'])
 def upload_file():
     if 'username' not in session:
@@ -708,6 +717,7 @@ def upload_file():
         current_url=request.path,
         )
 
+# Route untuk menampilkan hasil klaster
 @clustering.route('/ftc/results', methods=['GET'])
 def show_results():
     if 'username' not in session:
@@ -736,6 +746,7 @@ def show_results():
         current_url=request.path,
         )
 
+# Route proses untuk menghapus file csv dan json
 def delete_file(file_path, file_type):
     try:
         if os.path.exists(file_path):
@@ -749,6 +760,7 @@ def delete_file(file_path, file_type):
         logging.error(f'Gagal menghapus {file_type}: {file_path} - {e}')
         print(f'Gagal menghapus {file_type}','danger')
 
+# Route buat hapus data json, csv, dan database
 @clustering.route('/delete-clustering-ftc', methods=['GET', 'DELETE'])
 def delete_cluster():
     try:
@@ -766,6 +778,7 @@ def delete_cluster():
         json_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_clusterrr3.json'
         delete_file(json_file_path, 'File JSON')
 
+        flash('Data berhasil dihapus dari database', 'success')
         return redirect(url_for('clustering.upload_file'))
 
     except Exception as e:
