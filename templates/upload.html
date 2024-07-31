@@ -24,9 +24,8 @@
                <tr>
                     <th>Iteration</th>
                     <th>Terms</th>
-                    <th>Documents</th>
-                    <th>Full Text</th>
                     <th>EO</th>
+                    <th>Actions</th>
                </tr>
           </thead>
           <tbody>
@@ -34,10 +33,66 @@
                <tr class="{% if item.selected %}selected-cluster{% endif %}">
                     <td>{{ item.Iteration }}</td>
                     <td>{{ item.Terms | join(', ') }}</td>
-                    <td>{{ item.Documents | join(', ') }}</td>
-                    <td>{{ item.Full_Text | join(', ') }}</td>
                     <td>{{ item.EO }}</td>
+                    <td>
+                         <button class="btn btn-dark" data-bs-toggle="modal"
+                              data-bs-target="#detailsModal{{ loop.index }}">Lihat Documents</button>
+                         <button class="btn btn-dark" data-bs-toggle="modal"
+                              data-bs-target="#fullTextModal{{ loop.index }}">Lihat Full Text</button>
+                    </td>
                </tr>
+
+               <!-- Modal Documents -->
+               <div class="modal fade" id="detailsModal{{ loop.index }}" tabindex="-1"
+                    aria-labelledby="detailsModalLabel{{ loop.index }}" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                         <div class="modal-content">
+                              <div class="modal-header">
+                                   <h5 class="modal-title" id="detailsModalLabel{{ loop.index }}">Detail Dokuments {{
+                                        item.Iteration }}</h5>
+                                   <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                              </div>
+                              <div class="modal-body">
+                                   <h6>Documents</h6>
+                                   <small>Total Documents: {{ item.Total_Documents }}</small>
+                                   <p>{{ item.Documents | join(', ') }}</p>
+                              </div>
+                              <div class="modal-footer">
+                                   <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Close</button>
+                              </div>
+                         </div>
+                    </div>
+               </div>
+
+               <!-- Modal Full Text -->
+               <div class="modal fade" id="fullTextModal{{ loop.index }}" tabindex="-1"
+                    aria-labelledby="fullTextLabel{{ loop.index }}" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                         <div class="modal-content">
+                              <div class="modal-header">
+                                   <h5 class="modal-title" id="fullTextModalLabel{{ loop.index }}">Detail Full Text
+                                        {{ item.Iteration }}</h5>
+                                   <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                              </div>
+                              <div class="modal-body">
+                                   <h6>Full Text</h6>
+                                   <small>Total Full Text: {{ item.Total_Full_Texts}}</small>
+                                   <ul>
+                                        {% for doc in item.Full_Text %}
+                                        <li>{{ doc }}</li>
+                                        {% endfor %}
+                                   </ul>
+                              </div>
+                              <div class="modal-footer">
+                                   <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Close</button>
+                              </div>
+                         </div>
+                    </div>
+               </div>
                {% endfor %}
           </tbody>
      </table>
@@ -54,5 +109,5 @@
      <p>Silakan <a href="{{ url_for('auth.login') }}">masuk</a> untuk mengakses halaman ini.</p>
 
      {% endif %}
-     {% endblock %}
 </div>
+{% endblock %}
