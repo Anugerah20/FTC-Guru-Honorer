@@ -17,534 +17,6 @@ import operator
 
 clustering = Blueprint('clustering', __name__)
 
-'''
-FTC Frequent Term Based Clustering
-TERBARU VERSI 1
-'''
-# # Fungsi untuk koneksi ke tabel_bersih
-# def db_connect(host, user, password, database):
-#     conn = mysql.connector.connect(
-#         host=host,
-#         user=user,
-#         password=password,
-#         database=database
-#     )
-#     cursor = conn.cursor()
-#     return conn, cursor
-
-# # Fungsi untuk memanggil data dari bersih
-# def fetch_data():
-#     conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
-#     cursor.execute("SELECT full_text FROM bersih")
-#     rows = cursor.fetchall()
-#     cursor.close()
-#     conn.close()
-#     return [row[0] for row in rows]
-
-# # Fungsi untuk menyimpan data ke bersih
-# def save_text_to_db(texts):
-#     conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
-#     cursor.executemany("INSERT INTO bersih (full_text) VALUES (%s)", [(text,) for text in texts])
-#     conn.commit()
-#     cursor.close()
-#     conn.close()
-
-# def process_cluster(data):
-#     # Langkah 2: Menggabungkan teks
-#     all_text = ' '.join(data)
-
-#     # Memproses teks dengan menghapus kata-kata yang tidak penting dan mengganti kata
-#     all_text = re.sub(r'\baja\b', 'saja', all_text)
-
-#     # Menghapus kata yang dan tidak
-#     all_text = re.sub(r'\b(?:yang|dan|tidak)\b', '', all_text)
-
-#     # Menghapus angka
-#     all_text = re.sub(r'\d+', '', all_text)
-
-
-#     # Langkah 3: Membagi teks menjadi kata-kata
-#     words = all_text.split()
-
-#     # Langkah 4: Menghitung frekuensi kemunculan kata
-#     word_counts = Counter(words)
-
-#     # Langkah 5: Menghitung probabilitas kemunculan kata
-#     total_words = sum(word_counts.values())
-#     word_probabilities = {word: count / total_words for word, count in word_counts.items()}
-
-#     # Langkah 6: Mengurutkan kata berdasarkan probabilitas dan memilih 10 kata teratas
-#     sorted_word_probabilities = dict(sorted(word_probabilities.items(), key=lambda item: item[1], reverse=True)[:10])
-
-#     # Langkah 7: Membuat klaster berdasarkan kombinasi term teratas dan kata tunggal
-#     clusters = defaultdict(set)
-#     top_terms = list(sorted_word_probabilities.keys())
-#     min_support = 4  # Memberikan minimum support 4
-
-#     # Minimal support 50 kalimat
-
-#     for index, text in enumerate(data):
-#         words = text.split()
-#         doc_id = f'D{index+1}'
-
-#         # Tambahkan kata tunggal yang sering muncul
-#         for word in words:
-#             if word in top_terms and word:
-#                 clusters[word].add(doc_id)
-
-#         # Tambahkan kombinasi dua term
-#         for term1, term2 in combinations(top_terms, 2):
-#             if term1 in words and term2 in words:
-#                 clusters[f'{term1}, {term2}'].add(doc_id)
-
-#         # Tambahkan kombinasi tiga term
-#         for term1, term2, term3 in combinations(top_terms, 3):
-#             if term1 in words and term2 in words and term3 in words:
-#                 clusters[f'{term1}, {term2}, {term3}'].add(doc_id)
-
-#     cluster_candidates = [(terms, list(docs)) for terms, docs in clusters.items() if len(docs) >= min_support]
-
-#     # Langkah 9: Menghitung nilai entropy overlap untuk setiap klaster
-#     def calculate_entropy_overlap(docs):
-#         term_count = Counter()
-#         total_terms = 0
-#         total_docs = len(docs)
-
-#         for doc in docs:
-#             text = data[int(doc[1:]) - 1]
-#             words = text.split()
-#             term_count.update(words)
-#             total_terms += len(words)
-
-#         entropy = 0
-#         for term, count in term_count.items():
-#             probability = count / total_terms
-#             entropy -= probability * math.log(probability, 2)
-
-#         return entropy / total_docs
-
-#     # Langkah 10: Menyiapkan data untuk disimpan ke JSON
-#     json_data = []
-#     terms_involved = set()
-
-#     for terms, docs in cluster_candidates:
-#         terms_list = terms.split(', ')
-#         terms_involved.update(terms_list)
-#         entropy = calculate_entropy_overlap(docs)
-
-#         # Menyiapkan dokumen yang terlibat
-#         documents_to_show = docs[:3]  # Menampilkan maksimal 3 dokumen
-
-#         full_text = [data[int(doc[1:]) - 1] for doc in documents_to_show]
-
-#         json_data.append({
-#             'Terms': terms_list,
-#             'Documents': documents_to_show,
-#             'Full_Text': full_text,
-#             'EO': entropy,
-#         })
-
-#     return json_data, terms_involved
-
-# # Testing clustering ftc
-# # data = [
-# #     "guru honorer rendahin banyak anak baca nulis ngitung kerja mulia kaya gitu bisa nya bina memang gaji guru honorer rendah salah guru salah sistemasi perintah aja kurang apresiasi guru honorer",
-# #     "kakak honorer semenjak lulus sarjana gaji guru kata cuma isi bensin",
-# #     "allah padahal banyak guru guru honorer lebih derita guru guru influencer anggar pakai naikin gaji guru honorer acara begini",
-# #     "semua guru asn semua guru gaji pokok layak tunjang banyak guru gaji bawah rupiah bulan sebut guru honorer",
-# #     "fakta banyak banget guru honorer sepuh tetep dapat gaji bawah umr padahal guru salah kerja puji coba guru apa dunia malah pandang rendah",
-# #     "memang rendah dulu sempat honorer ajar bahasa inggris smp jam ribu alhamdulillah bulan ribuan lebih banyak gaji dari ajar prima agama bulan juta sering gantiin guru tidak hadir",
-# #     "itu tuh emang fakta kirim mama guru honorer gaji bulan paling banyak juta",
-# #     "hidup bagi dunia mana pengiri memang fakta kaya gitu luar banyak guru honorer gaji kecil guru guru pelosok lebih banyak perlu hadap liat cuman orang untung naik pns"
-# # ]
-
-# # # Menampilkan hasil testing
-# # json_data, terms_involved = process_cluster(data)
-# # print(json_data)
-
-# # Letakkan file csv disini
-# UPLOAD_FOLDER = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads'
-# # Kondisi jika folder tidak ada, akan dibuat folder baru
-# if not os.path.exists(UPLOAD_FOLDER):
-#     os.makedirs(UPLOAD_FOLDER)
-
-# # Fungsi meriksa hanya file csv yang boleh
-# def allowed_file(filename):
-#     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'csv'}
-
-# @clustering.route('/ftc', methods=['GET', 'POST'])
-# #  Fungsi untuk import file csv
-# def upload_file():
-
-#     # Kondisi jika user belum login
-#     if 'username' not in session:
-#         return redirect(url_for('auth.login'))
-
-#     if request.method == 'POST':
-#         if 'file' not in request.files:
-#             flash('Tidak ada file yang dipilih', 'danger')
-#             return redirect(show_results)
-#         file = request.files['file']
-#         if file.filename == '':
-#             flash('File belum dipilih', 'danger')
-#             return redirect(request.url)
-#         if file and allowed_file(file.filename):
-#             filename = secure_filename(file.filename)
-#             file_path = os.path.join(UPLOAD_FOLDER, filename)
-#             file.save(file_path)
-#             full_text = pd.read_csv(file_path)
-#             data = full_text['full_text'].tolist()
-#             json_data, terms_involved = process_cluster(data)
-
-#             # Simpan hasil klaster FTC ke file JSON
-#             with open(os.path.join(UPLOAD_FOLDER, 'ftc_clusterrr.json'), 'w') as json_file:
-#                 json.dump(json_data, json_file, indent=4)
-
-#             #  Simpan data ke database mysql
-#             save_text_to_db(data)
-
-#         username = session.get('username')
-#         return render_template(
-#                 'upload.html',
-#                 json_data=json_data,
-#                 terms_involved=terms_involved,
-#                 username=username,
-#                 current_url=request.path,
-#                 )
-
-#     username = session.get('username')
-#     return render_template(
-#         'upload.html',
-#         json_data=None,
-#         terms_involved=None,
-#         username=username,
-#         current_url=request.path,
-#         )
-
-# # Melihat hasil klastering FTC
-# @clustering.route('/ftc/results', methods=['GET'])
-# def show_results():
-
-#     if 'username' not in session:
-#         return redirect(url_for('auth.login'))
-
-#     # Menampilkan hasil klasterisasi dari file JSON yang telah disimpan
-#     with open(os.path.join(UPLOAD_FOLDER, 'ftc_clusterrr.json'), 'r') as json_file:
-#         json_data = json.load(json_file)
-#         # Menampilkan term
-#         terms_involved = set()
-#         for item in json_data:
-#             terms_involved.update(item['Terms'])
-
-#         # Menampilkan jumlah total klaster
-#         total_clusters = len(json_data)
-
-#         username = session['username']
-#     return render_template(
-#         'upload.html',
-#         json_data=json_data,
-#         terms_involved=terms_involved,
-#         total_clusters=total_clusters,
-#         username=username,
-#         current_url=request.path,
-#         )
-
-# # Membuat fungsi khusus untuk menghapus file csv dan json
-# def delete_file(file_path, file_type):
-#     try:
-#         if os.path.exists(file_path):
-#             os.remove(file_path)
-#             logging.info(f'File {file_type} berhasil dihapus: {file_path}')
-#             flash(f'File {file_type} berhasil dihapus','success')
-#         else:
-#             logging.warning(f'File {file_type} tidak ditemukan: {file_path}')
-#             print(f'File {file_type} tidak ditemukan','warning')
-#     except Exception as e:
-#         logging.error(f'Gagal menghapus {file_type}: {file_path} - {e}')
-#         print(f'Gagal menghapus {file_type}','danger')
-
-# # Membuat route delete data clustering dari database mysql dan file csv serta json
-# @clustering.route('/delete-clustering-ftc', methods=['GET', 'DELETE'])
-# # Fungsi untuk menghapus data clustering ftc dari database mysql
-# def delete_cluster():
-#     try:
-#         conn, cursor = db_connect(host="localhost", user="root", password="", database="guru_honorer")
-
-#         cursor.execute("UPDATE bersih SET full_text = ''")
-#         conn.commit()
-
-#         # Hapus baris yang memiliki full_text kosong
-#         cursor.execute("DELETE FROM bersih WHERE full_text = ''")
-#         conn.commit()
-
-#         # Menghapus file CSV dengan memanggil fungsi delete_file
-#         csv_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/hasil_preprocesing_guru2.csv'
-#         delete_file(csv_file_path, 'File CSV')
-
-#         # Menghapus file JSON dengan memanggil fungsi delete_file
-#         json_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_clusterrr.json'
-#         delete_file(json_file_path, 'File JSON')
-
-#         cursor.close()
-#         conn.close()
-
-#         flash('Data berhasil dihapus dari database', 'success')
-#         return redirect(url_for('clustering.upload_file'))
-
-#     # Tampilkan pesan error jika database error
-#     except mysql.connector.Error as err:
-#         print(f'Database error: {err}')
-#         return redirect(url_for('clustering.upload_file'))
-
-#     # Tampilkan pesan error lainnya jika ada
-#     except Exception as e:
-#         print(f"Error: {e}")
-#         return jsonify({'error': str(e)})
-
-# =========================================================================== FTC VERSI 2 ====================================================
-
-'''
-FTC Frequent Term Based Clustering
-TERBARU VERSI 2
-'''
-
-'''
-def db_connect(host, user, password, database):
-    conn = mysql.connector.connect(
-        host=host,
-        user=user,
-        password=password,
-        database=database
-    )
-    cursor = conn.cursor()
-    return conn, cursor
-
-def fetch_data():
-    conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
-    cursor.execute("SELECT full_text FROM bersih")
-    rows = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return [row[0] for row in rows]
-
-def save_text_to_db(texts):
-    conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
-    cursor.executemany("INSERT INTO bersih (full_text) VALUES (%s)", [(text,) for text in texts])
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-def process_cluster(data):
-    all_text = ' '.join(data)
-    all_text = re.sub(r'\baja\b', 'saja', all_text)
-    all_text = re.sub(r'\b(?:yang|dan|tidak)\b', '', all_text)
-    all_text = re.sub(r'\d+', '', all_text)
-
-    words = all_text.split()
-    word_counts = Counter(words)
-    total_words = sum(word_counts.values())
-    word_probabilities = {word: count / total_words for word, count in word_counts.items()}
-    sorted_word_probabilities = dict(sorted(word_probabilities.items(), key=lambda item: item[1], reverse=True)[:10])
-
-    clusters = defaultdict(set)
-    top_terms = list(sorted_word_probabilities.keys())
-    min_support = 4
-
-    for index, text in enumerate(data):
-        words = text.split()
-        doc_id = f'D{index+1}'
-
-        for word in words:
-            if word in top_terms and word:
-                clusters[word].add(doc_id)
-
-        for term1, term2 in combinations(top_terms, 2):
-            if term1 in words and term2 in words:
-                clusters[f'{term1}, {term2}'].add(doc_id)
-
-        for term1, term2, term3 in combinations(top_terms, 3):
-            if term1 in words and term2 in words and term3 in words:
-                clusters[f'{term1}, {term2}, {term3}'].add(doc_id)
-
-    cluster_candidates = [(terms, list(docs)) for terms, docs in clusters.items() if len(docs) >= min_support]
-
-    def calculate_entropy_overlap(docs):
-        term_count = Counter()
-        total_terms = 0
-        total_docs = len(docs)
-
-        for doc in docs:
-            text = data[int(doc[1:]) - 1]
-            words = text.split()
-            term_count.update(words)
-            total_terms += len(words)
-
-        entropy = 0
-        for term, count in term_count.items():
-            probability = count / total_terms
-            entropy -= probability * math.log(probability, 2)
-
-        return entropy / total_docs
-
-    json_data = []
-    terms_involved = set()
-    # menambahkan iterasi
-    iteration = 1
-
-    for terms, docs in cluster_candidates:
-        terms_list = terms.split(', ')
-        terms_involved.update(terms_list)
-        entropy = calculate_entropy_overlap(docs)
-        full_text = [data[int(doc[1:]) - 1] for doc in docs]
-
-        json_data.append({
-            'Iteration': f'Iterasi ke-{iteration}',
-            'Terms': terms_list,
-            'Documents': docs,
-            'Full_Text': full_text,
-            'EO': entropy,
-        })
-
-        iteration += 1
-
-    return json_data, terms_involved
-
-# # Testing clustering ftc
-# data = [
-#     "guru honorer rendahin banyak anak baca nulis ngitung kerja mulia kaya gitu bisa nya bina memang gaji guru honorer rendah salah guru salah sistemasi perintah aja kurang apresiasi guru honorer",
-#     "kakak honorer semenjak lulus sarjana gaji guru kata cuma isi bensin",
-#     "allah padahal banyak guru guru honorer lebih derita guru guru influencer anggar pakai naikin gaji guru honorer acara begini",
-#     "semua guru asn semua guru gaji pokok layak tunjang banyak guru gaji bawah rupiah bulan sebut guru honorer",
-#     "fakta banyak banget guru honorer sepuh tetep dapat gaji bawah umr padahal guru salah kerja puji coba guru apa dunia malah pandang rendah",
-#     "memang rendah dulu sempat honorer ajar bahasa inggris smp jam ribu alhamdulillah bulan ribuan lebih banyak gaji dari ajar prima agama bulan juta sering gantiin guru tidak hadir",
-#     "itu tuh emang fakta kirim mama guru honorer gaji bulan paling banyak juta",
-#     "hidup bagi dunia mana pengiri memang fakta kaya gitu luar banyak guru honorer gaji kecil guru guru pelosok lebih banyak perlu hadap liat cuman orang untung naik pns"
-# ]
-
-# # Menampilkan hasil testing
-# json_data, terms_involved = process_cluster(data)
-# print(json_data)
-
-UPLOAD_FOLDER = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'csv'}
-
-@clustering.route('/ftc', methods=['GET', 'POST'])
-def upload_file():
-    if 'username' not in session:
-        return redirect(url_for('auth.login'))
-
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            flash('Tidak ada file yang dipilih', 'danger')
-            return redirect(show_results)
-        file = request.files['file']
-        if file.filename == '':
-            flash('File belum dipilih', 'danger')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(UPLOAD_FOLDER, filename)
-            file.save(file_path)
-            full_text = pd.read_csv(file_path)
-            data = full_text['full_text'].tolist()
-            json_data, terms_involved = process_cluster(data)
-
-            with open(os.path.join(UPLOAD_FOLDER, 'ftc_clusterrr2.json'), 'w') as json_file:
-                json.dump(json_data, json_file, indent=4)
-
-            save_text_to_db(data)
-
-        username = session.get('username')
-        return render_template(
-                'upload.html',
-                json_data=json_data,
-                terms_involved=terms_involved,
-                username=username,
-                current_url=request.path,
-                )
-
-    username = session.get('username')
-    return render_template(
-        'upload.html',
-        json_data=None,
-        terms_involved=None,
-        username=username,
-        current_url=request.path,
-        )
-
-@clustering.route('/ftc/results', methods=['GET'])
-def show_results():
-    if 'username' not in session:
-        return redirect(url_for('auth.login'))
-
-    with open(os.path.join(UPLOAD_FOLDER, 'ftc_clusterrr2.json'), 'r') as json_file:
-        json_data = json.load(json_file)
-        terms_involved = set()
-        for item in json_data:
-            terms_involved.update(item['Terms'])
-
-        total_clusters = len(json_data)
-        username = session['username']
-    return render_template(
-        'upload.html',
-        json_data=json_data,
-        terms_involved=terms_involved,
-        total_clusters=total_clusters,
-        username=username,
-        current_url=request.path,
-        )
-
-def delete_file(file_path, file_type):
-    try:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            logging.info(f'File {file_type} berhasil dihapus: {file_path}')
-            flash(f'File {file_type} berhasil dihapus','success')
-        else:
-            logging.warning(f'File {file_type} tidak ditemukan: {file_path}')
-            print(f'File {file_type} tidak ditemukan','warning')
-    except Exception as e:
-        logging.error(f'Gagal menghapus {file_type}: {file_path} - {e}')
-        print(f'Gagal menghapus {file_type}','danger')
-
-@clustering.route('/delete-clustering-ftc', methods=['GET', 'DELETE'])
-def delete_cluster():
-    try:
-        conn, cursor = db_connect(host="localhost", user="root", password="", database="guru_honorer")
-
-        cursor.execute("UPDATE bersih SET full_text = ''")
-        conn.commit()
-
-        cursor.execute("DELETE FROM bersih WHERE full_text = ''")
-        conn.commit()
-
-        csv_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/hasil_preprocesing_guru2.csv'
-        delete_file(csv_file_path, 'File CSV')
-
-        json_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_clusterrr2.json'
-        delete_file(json_file_path, 'File JSON')
-
-        cursor.close()
-        conn.close()
-
-        flash('Data berhasil dihapus dari database', 'success')
-        return redirect(url_for('clustering.upload_file'))
-
-    except mysql.connector.Error as err:
-        print(f'Database error: {err}')
-        return redirect(url_for('clustering.upload_file'))
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({'error': str(e)})
-'''
-
-# =========================================================================== FTC VERSI 3 ====================================================
-'''
 # Fungsi untuk menghubungkan ke database
 def db_connect(host, user, password, database):
     conn = mysql.connector.connect(
@@ -556,6 +28,7 @@ def db_connect(host, user, password, database):
     cursor = conn.cursor()
     return conn, cursor
 
+
 # Fungsi untuk memanggil data dari tabel bersih
 def fetch_data():
     conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
@@ -565,6 +38,7 @@ def fetch_data():
     conn.close()
     return [row[0] for row in rows]
 
+
 # Fungsi untuk menyimpan data ke tabel bersih
 def save_text_to_db(texts):
     conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
@@ -573,292 +47,99 @@ def save_text_to_db(texts):
     cursor.close()
     conn.close()
 
+
+def extract_terms(documents):
+    terms = set()
+    for doc in documents:
+        terms.update(doc.split())
+    return sorted(terms)
+
+
+def preprocess_documents(documents):
+    return [set(doc.split()) for doc in documents]
+
+
+def generate_candidates(itemset_number, last_frequent_itemsets):
+    if itemset_number == 1:
+        raise Exception(
+            "This function should not be called for the first itemset generation.")
+    else:
+        temp_candidates = set()
+        # Iterate over pairs of last frequent itemsets
+        for i in range(len(last_frequent_itemsets)):
+            for j in range(i + 1, len(last_frequent_itemsets)):
+                # Turn tuples into sets for easy merging
+                set1, set2 = set(last_frequent_itemsets[i]), set(
+                    last_frequent_itemsets[j])
+                # Merge sets only if they share exactly itemset_number - 2 common items
+                if len(set1.intersection(set2)) == itemset_number - 2:
+                    new_candidate = tuple(sorted(set1.union(set2)))
+                    # Ensure new candidate has the correct number of items
+                    if len(new_candidate) == itemset_number:
+                        temp_candidates.add(new_candidate)
+        return list(temp_candidates)
+
+
+def calculate_frequent_itemsets(documents, candidates, min_sup):
+    num_documents = len(documents)
+    frequent_itemsets = []
+    itemset_counts = [0] * len(candidates)
+    itemset_documents = [set() for _ in range(len(candidates))]
+
+    for i, candidate in enumerate(candidates):
+        for doc_id, document in enumerate(documents):
+            if set(candidate).issubset(document):
+                itemset_counts[i] += 1
+                itemset_documents[i].add(f"D{doc_id + 1}")
+
+    return [(candidates[i], itemset_documents[i]) for i in range(len(candidates)) if itemset_counts[i] / num_documents >= min_sup]
+
+
+def apriori(documents, min_sup):
+    terms = extract_terms(documents)
+    processed_docs = preprocess_documents(documents)
+    all_frequent_itemsets = []  # List to store all frequent itemsets
+
+    # Generate initial frequent itemsets directly from terms
+    last_frequent_itemsets = calculate_frequent_itemsets(
+        processed_docs, [tuple([term]) for term in terms], min_sup)
+
+    # Store initial frequent itemsets
+    all_frequent_itemsets.extend(last_frequent_itemsets)
+
+    itemset_number = 1
+
+    while True:
+        itemset_number += 1
+        candidates = generate_candidates(
+            itemset_number, [itemset for itemset, _ in last_frequent_itemsets])
+
+        last_frequent_itemsets = calculate_frequent_itemsets(
+            processed_docs, candidates, min_sup)
+
+        if not last_frequent_itemsets:
+            break
+
+        # Store all subsequent frequent itemsets
+        all_frequent_itemsets.extend(last_frequent_itemsets)
+
+        if itemset_number > 10:  # Safety check to prevent infinite loops
+            break
+
+    return all_frequent_itemsets
+
+
 # Fungsi untuk menghitung klaster
 def process_cluster(data):
-    all_text = ' '.join(data)
-    all_text = re.sub(r'\baja\b', 'saja', all_text)
-    all_text = re.sub(r'\b(?:yang|dan|tidak)\b', '', all_text)
-    all_text = re.sub(r'\d+', '', all_text)
-
-    words = all_text.split()
-    word_counts = Counter(words)
-    total_words = sum(word_counts.values())
-    word_probabilities = {word: count / total_words for word, count in word_counts.items()}
-    sorted_word_probabilities = dict(sorted(word_probabilities.items(), key=lambda item: item[1], reverse=True)[:10])
+    min_support = 0.4  # Ubah menjadi persentase 0.4 atau (40%)
+    all_frequent_itemsets = apriori(data, min_support)
 
     clusters = defaultdict(set)
-    top_terms = list(sorted_word_probabilities.keys())
-    min_support = 4
-
-    # Membentuk klaster berdasarkan kombinasi term
-    for index, text in enumerate(data):
-        words = text.split()
-        doc_id = f'D{index+1}'
-
-        for word in words:
-            if word in top_terms and word:
-                clusters[word].add(doc_id)
-
-        for term1, term2 in combinations(top_terms, 2):
-            if term1 in words and term2 in words:
-                clusters[f'{term1}, {term2}'].add(doc_id)
-
-        for term1, term2, term3 in combinations(top_terms, 3):
-            if term1 in words and term2 in words and term3 in words:
-                clusters[f'{term1}, {term2}, {term3}'].add(doc_id)
-
-    cluster_candidates = [(terms, list(docs)) for terms, docs in clusters.items() if len(docs) >= min_support]
-
-    def calculate_entropy_overlap(docs):
-        term_count = Counter()
-        total_terms = 0
-        total_docs = len(docs)
-
-        for doc in docs:
-            text = data[int(doc[1:]) - 1]
-            words = text.split()
-            term_count.update(words)
-            total_terms += len(words)
-
-        entropy = 0
-        for term, count in term_count.items():
-            probability = count / total_terms
-            entropy -= probability * math.log(probability, 2)
-
-        return entropy / total_docs
-
-    json_data = []
     terms_involved = set()
-    iteration = 1
-    selected_cluster = None
 
-    # Proses iterasi klaster untuk membentuk file JSON yang menyimpan hasil klaster terpilih
-    for terms, docs in cluster_candidates:
-        terms_list = terms.split(', ')
-        terms_involved.update(terms_list)
-        entropy = calculate_entropy_overlap(docs)
-        full_text = [data[int(doc[1:]) - 1] for doc in docs]
-
-        cluster_info = {
-            'Iteration': f'Iterasi ke-{iteration}',
-            'Terms': terms_list,
-            'Documents': docs,
-            'Full_Text': full_text,
-            'EO': entropy,
-            'selected': False  # Default to not selected
-        }
-
-        # Memilih klaster dengan nilai entropy terendah
-        # Sebagai klaster terpilih
-        if selected_cluster is None or entropy < selected_cluster['EO']:
-            selected_cluster = cluster_info
-
-        json_data.append(cluster_info)
-        iteration += 1
-
-    if selected_cluster:
-        selected_cluster['selected'] = True
-
-    return json_data, terms_involved, selected_cluster
-
-# Pilih folder untuk menyimpan file upload
-UPLOAD_FOLDER = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-
-# Hanya mengizinkan file csv
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'csv'}
-
-# Route klaster untuk proses upload file csv
-@clustering.route('/ftc', methods=['GET', 'POST'])
-def upload_file():
-    if 'username' not in session:
-        return redirect(url_for('auth.login'))
-
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            flash('Tidak ada file yang dipilih', 'danger')
-            return redirect(request.url)
-        file = request.files['file']
-        if file.filename == '':
-            flash('File belum dipilih', 'danger')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(UPLOAD_FOLDER, filename)
-            file.save(file_path)
-            full_text = pd.read_csv(file_path)
-            data = full_text['full_text'].tolist()
-            json_data, terms_involved, selected_cluster = process_cluster(data)
-
-            with open(os.path.join(UPLOAD_FOLDER, 'ftc_clusterrr3.json'), 'w') as json_file:
-                json.dump(json_data, json_file, indent=4)
-
-            save_text_to_db(data)
-
-        username = session.get('username')
-        return render_template(
-                'upload.html',
-                json_data=json_data,
-                terms_involved=terms_involved,
-                selected_cluster=selected_cluster,
-                username=username,
-                current_url=request.path,
-                )
-
-    username = session.get('username')
-    return render_template(
-        'upload.html',
-        json_data=None,
-        terms_involved=None,
-        selected_cluster=None,
-        username=username,
-        current_url=request.path,
-        )
-
-# Route untuk menampilkan hasil klaster
-@clustering.route('/ftc/results', methods=['GET'])
-def show_results():
-    if 'username' not in session:
-        return redirect(url_for('auth.login'))
-
-    with open(os.path.join(UPLOAD_FOLDER, 'ftc_clusterrr3.json'), 'r') as json_file:
-        json_data = json.load(json_file)
-        terms_involved = set()
-        selected_cluster = None
-
-        for item in json_data:
-            terms_involved.update(item['Terms'])
-            if item.get('selected'):
-                selected_cluster = item
-
-        total_clusters = len(json_data)
-        username = session['username']
-
-    return render_template(
-        'upload.html',
-        json_data=json_data,
-        terms_involved=terms_involved,
-        total_clusters=total_clusters,
-        selected_cluster=selected_cluster,
-        username=username,
-        current_url=request.path,
-        )
-
-# Route proses untuk menghapus file csv dan json
-def delete_file(file_path, file_type):
-    try:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            logging.info(f'File {file_type} berhasil dihapus: {file_path}')
-            flash(f'File {file_type} berhasil dihapus','success')
-        else:
-            logging.warning(f'File {file_type} tidak ditemukan: {file_path}')
-            print(f'File {file_type} tidak ditemukan','warning')
-    except Exception as e:
-        logging.error(f'Gagal menghapus {file_type}: {file_path} - {e}')
-        print(f'Gagal menghapus {file_type}','danger')
-
-# Route buat hapus data json, csv, dan database
-@clustering.route('/delete-clustering-ftc', methods=['GET', 'DELETE'])
-def delete_cluster():
-    try:
-        conn, cursor = db_connect(host="localhost", user="root", password="", database="guru_honorer")
-
-        cursor.execute("UPDATE bersih SET full_text = ''")
-        conn.commit()
-
-        cursor.execute("DELETE FROM bersih WHERE full_text = ''")
-        conn.commit()
-
-        csv_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/hasil_preprocesing_guru2.csv'
-        delete_file(csv_file_path, 'File CSV')
-
-        json_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_clusterrr3.json'
-        delete_file(json_file_path, 'File JSON')
-
-        flash('Data berhasil dihapus dari database', 'success')
-        return redirect(url_for('clustering.upload_file'))
-
-    except Exception as e:
-        logging.error(f'Gagal menghapus data dan file JSON: {e}')
-        flash(f'Gagal menghapus data dan file JSON', 'danger')
-        return redirect(url_for('clustering.upload_file'))
-
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-'''
-
-# =========================================================================== FTC VERSI 4 =====================================================================
-
-# Fungsi untuk menghubungkan ke database
-def db_connect(host, user, password, database):
-    conn = mysql.connector.connect(
-        host=host,
-        user=user,
-        password=password,
-        database=database
-    )
-    cursor = conn.cursor()
-    return conn, cursor
-
-# Fungsi untuk memanggil data dari tabel bersih
-def fetch_data():
-    conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
-    cursor.execute("SELECT full_text FROM bersih")
-    rows = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return [row[0] for row in rows]
-
-# Fungsi untuk menyimpan data ke tabel bersih
-def save_text_to_db(texts):
-    conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
-    cursor.executemany("INSERT INTO bersih (full_text) VALUES (%s)", [(text,) for text in texts])
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-# Fungsi untuk menghitung klaster
-def process_cluster(data):
-    all_text = ' '.join(data)
-    all_text = re.sub(r'\baja\b', 'saja', all_text)
-    all_text = re.sub(r'\b(?:yang|dan|tidak)\b', '', all_text)
-    all_text = re.sub(r'\d+', '', all_text)
-
-    words = all_text.split()
-    word_counts = Counter(words)
-    total_words = sum(word_counts.values())
-    word_probabilities = {word: count / total_words for word, count in word_counts.items()}
-    sorted_word_probabilities = dict(sorted(word_probabilities.items(), key=lambda item: item[1], reverse=True)[:10])
-
-    clusters = defaultdict(set)
-    top_terms = list(sorted_word_probabilities.keys())
-    min_support = 4
-
-    # Membentuk klaster berdasarkan kombinasi term
-    for index, text in enumerate(data):
-        words = text.split()
-        doc_id = f'D{index+1}'
-
-        for word in words:
-            if word in top_terms and word:
-                clusters[word].add(doc_id)
-
-        for term1, term2 in combinations(top_terms, 2):
-            if term1 in words and term2 in words:
-                clusters[f'{term1}, {term2}'].add(doc_id)
-
-        for term1, term2, term3 in combinations(top_terms, 3):
-            if term1 in words and term2 in words and term3 in words:
-                clusters[f'{term1}, {term2}, {term3}'].add(doc_id)
-
-    # Menyaring klaster yang memiliki support lebih dari min_support
-    cluster_candidates = [(terms, list(docs)) for terms, docs in clusters.items() if len(docs) >= min_support]
+    for itemset, docs in all_frequent_itemsets:
+        terms_involved.update(itemset)
+        clusters[', '.join(itemset)] = docs
 
     # Fungsi untuk menghitung entropy overlap
     def calculate_entropy_overlap(docs):
@@ -880,15 +161,13 @@ def process_cluster(data):
         return entropy / total_docs
 
     json_data = []
-    terms_involved = set()
     # Variabel untuk iterasi klatser
     iteration = 1
     selected_cluster = None
 
     # Proses iterasi klaster untuk membentuk file JSON yang menyimpan hasil klaster terpilih
-    for terms, docs in cluster_candidates:
+    for terms, docs in clusters.items():
         terms_list = terms.split(', ')
-        terms_involved.update(terms_list)
         entropy = calculate_entropy_overlap(docs)
         full_text = [data[int(doc[1:]) - 1] for doc in docs]
 
@@ -896,11 +175,10 @@ def process_cluster(data):
         total_documents = len(docs)
         total_full_texts = len(full_text)
 
-
         cluster_info = {
             'Iteration': f'Iterasi ke-{iteration}',
             'Terms': terms_list,
-            'Documents': docs,
+            'Documents': list(docs),
             'Full_Text': full_text,
             'EO': entropy,
             'selected': False,  # Default to not selected
@@ -919,16 +197,19 @@ def process_cluster(data):
     if selected_cluster:
         selected_cluster['selected'] = True
 
-    return json_data, terms_involved, selected_cluster, total_documents, total_full_texts
+    return json_data, list(terms_involved), selected_cluster, total_documents, total_full_texts
+
 
 # Pilih folder untuk menyimpan file upload
 UPLOAD_FOLDER = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
+
 # Hanya mengizinkan file csv
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'csv'}
+
 
 # Route klaster untuk proses upload file csv
 @clustering.route('/ftc', methods=['GET', 'POST'])
@@ -950,7 +231,7 @@ def upload_file():
             file.save(file_path)
             full_text = pd.read_csv(file_path)
             data = full_text['full_text'].tolist()
-            json_data, terms_involved, selected_cluster, total_documents, total_full_texts  = process_cluster(data)
+            json_data, terms_involved, selected_cluster, total_documents, total_full_texts = process_cluster(data)
 
             with open(os.path.join(UPLOAD_FOLDER, 'ftc_cluster4.json'), 'w') as json_file:
                 json.dump(json_data, json_file, indent=4)
@@ -959,15 +240,15 @@ def upload_file():
 
         username = session.get('username')
         return render_template(
-                'upload.html',
-                json_data=json_data,
-                terms_involved=terms_involved,
-                selected_cluster=selected_cluster,
-                username=username,
-                current_url=request.path,
-                total_documents=total_documents,
-                total_full_texts=total_full_texts
-                )
+            'upload.html',
+            json_data=json_data,
+            terms_involved=terms_involved,
+            selected_cluster=selected_cluster,
+            username=username,
+            current_url=request.path,
+            total_documents=total_documents,
+            total_full_texts=total_full_texts
+        )
 
     username = session.get('username')
     return render_template(
@@ -979,35 +260,6 @@ def upload_file():
         current_url=request.path,
         total_documents=0,
         total_full_texts=0
-        )
-
-# Route untuk menampilkan hasil klaster
-@clustering.route('/ftc/results', methods=['GET'])
-def show_results():
-    if 'username' not in session:
-        return redirect(url_for('auth.login'))
-
-    with open(os.path.join(UPLOAD_FOLDER, 'ftc_cluster4.json'), 'r') as json_file:
-        json_data = json.load(json_file)
-        terms_involved = set()
-        selected_cluster = None
-
-        for item in json_data:
-            terms_involved.update(item['Terms'])
-            if item.get('selected'):
-                selected_cluster = item
-
-        total_clusters = len(json_data)
-        username = session['username']
-
-    return render_template(
-        'upload.html',
-        json_data=json_data,
-        terms_involved=terms_involved,
-        total_clusters=total_clusters,
-        selected_cluster=selected_cluster,
-        username=username,
-        current_url=request.path,
     )
 
 # Route proses untuk menghapus file csv dan json
@@ -1056,6 +308,28 @@ def delete_cluster():
             cursor.close()
         if conn:
             conn.close()
+
+# Route untuk menampilkan hasil klaster
+@clustering.route('/ftc/results', methods=['GET'])
+def show_results():
+    if 'username' not in session:
+        return redirect(url_for('auth.login'))
+
+    file_path = os.path.join(UPLOAD_FOLDER, 'ftc_cluster4.json')
+    if not os.path.exists(file_path):
+        flash('Tidak ada hasil klaster yang tersedia.', 'danger')
+        return redirect(url_for('clustering.upload_file'))
+
+    with open(file_path, 'r') as json_file:
+        json_data = json.load(json_file)
+
+    username = session.get('username')
+    return render_template(
+        'upload.html',
+        json_data=json_data,
+        username=username,
+        current_url=request.path
+    )
 
 # Fungsi untuk memuat data JSON dari file
 def load_json_data(filepath):
