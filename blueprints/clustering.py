@@ -49,6 +49,14 @@ def save_text_to_db(texts):
 
 
 def extract_terms(documents):
+    """
+    Mengambil semua istilah unik dari dokumen.
+    Args:
+        documents (list of str): Daftar dokumen, setiap dokumen berupa string.
+    Returns:
+        list: Daftar istilah unik yang sudah diurutkan.
+    """
+
     terms = set()
     for doc in documents:
         terms.update(doc.split())
@@ -56,31 +64,59 @@ def extract_terms(documents):
 
 
 def preprocess_documents(documents):
+    """
+    Memproses dokumen dengan memecah setiap dokumen menjadi set istilah.
+    Args:
+        documents (list of str): Daftar dokumen, setiap dokumen berupa string.
+    Returns:
+        list of set: Daftar set istilah untuk setiap dokumen.
+    """
+
     return [set(doc.split()) for doc in documents]
 
 
 def generate_candidates(itemset_number, last_frequent_itemsets):
+    """
+    Menghasilkan kandidat itemset dengan ukuran tertentu dari itemset frekuensi terakhir.
+    Args:
+        itemset_number (int): Ukuran itemset yang akan dihasilkan.
+        last_frequent_itemsets (list of tuple): Daftar itemset frekuensi terakhir.
+    Returns:
+        list of tuple: Daftar kandidat itemset.
+    """
+
+    # Fungsi ini tidak boleh dipanggil untuk pembuatan itemset pertama
     if itemset_number == 1:
         raise Exception(
             "This function should not be called for the first itemset generation.")
     else:
         temp_candidates = set()
-        # Iterate over pairs of last frequent itemsets
+        # Lakukan perulangan terhadap pasangan dari set item yang sering muncul terakhir
         for i in range(len(last_frequent_itemsets)):
             for j in range(i + 1, len(last_frequent_itemsets)):
-                # Turn tuples into sets for easy merging
+                # Mengubah tupel menjadi set untuk memudahkan penggabungan
                 set1, set2 = set(last_frequent_itemsets[i]), set(
                     last_frequent_itemsets[j])
-                # Merge sets only if they share exactly itemset_number - 2 common items
+                # Gabungkan set hanya jika mereka memiliki kesamaan persis dengan itemset_number - 2 item yang sama
                 if len(set1.intersection(set2)) == itemset_number - 2:
                     new_candidate = tuple(sorted(set1.union(set2)))
-                    # Ensure new candidate has the correct number of items
+                    # Memastikan kandidat baru memiliki jumlah item yang benar
                     if len(new_candidate) == itemset_number:
                         temp_candidates.add(new_candidate)
         return list(temp_candidates)
 
 
 def calculate_frequent_itemsets(documents, candidates, min_sup):
+    """
+    Menghitung itemset frekuensi dan dokumen yang mengandung itemset tersebut.
+    Args:
+        documents (list of set): Daftar set istilah untuk setiap dokumen.
+        candidates (list of tuple): Daftar kandidat itemset.
+        min_sup (float): Ambang batas dukungan minimum.
+    Returns:
+        list of tuple: Daftar itemset frekuensi beserta dokumen yang mengandung itemset tersebut.
+    """
+
     num_documents = len(documents)
     frequent_itemsets = []
     itemset_counts = [0] * len(candidates)
@@ -92,19 +128,28 @@ def calculate_frequent_itemsets(documents, candidates, min_sup):
                 itemset_counts[i] += 1
                 itemset_documents[i].add(f"D{doc_id + 1}")
 
+    # Mengembalikan itemset frekuensi yang memenuhi ambang batas
     return [(candidates[i], itemset_documents[i]) for i in range(len(candidates)) if itemset_counts[i] / num_documents >= min_sup]
 
 
 def apriori(documents, min_sup):
+    """
+    Implementasi algoritma Apriori untuk menemukan itemset frekuensi.
+    Args:
+        documents (list of str): Daftar dokumen, setiap dokumen berupa string.
+        min_sup (float): Ambang batas dukungan minimum.
+        time (float): Waktu eksekusi algoritma apriori.
+    """
+
     terms = extract_terms(documents)
     processed_docs = preprocess_documents(documents)
-    all_frequent_itemsets = []  # List to store all frequent itemsets
+    all_frequent_itemsets = []  # Daftar untuk menyimpan semua set item yang sering digunakan
 
-    # Generate initial frequent itemsets directly from terms
+    # Menghasilkan frequent itemset awal secara langsung dari term
     last_frequent_itemsets = calculate_frequent_itemsets(
         processed_docs, [tuple([term]) for term in terms], min_sup)
 
-    # Store initial frequent itemsets
+    # Menyimpan set item awal yang sering digunakan
     all_frequent_itemsets.extend(last_frequent_itemsets)
 
     itemset_number = 1
@@ -114,24 +159,27 @@ def apriori(documents, min_sup):
         candidates = generate_candidates(
             itemset_number, [itemset for itemset, _ in last_frequent_itemsets])
 
+        # Menghitung set item yang sering muncul berikutnya
         last_frequent_itemsets = calculate_frequent_itemsets(
             processed_docs, candidates, min_sup)
 
+        # Berhenti jika tidak ada set item yang sering muncul berikutnya
         if not last_frequent_itemsets:
             break
 
-        # Store all subsequent frequent itemsets
+        # Menyimpan semua set item yang sering muncul berikutnya
         all_frequent_itemsets.extend(last_frequent_itemsets)
 
-        if itemset_number > 10:  # Safety check to prevent infinite loops
+        if itemset_number > 10:  # Pemeriksaan keamanan untuk mencegah loop tak terbatas
             break
 
-    return all_frequent_itemsets
+    return all_frequent_itemsets # Mengembalikan semua set item yang sering muncul
 
 
 # Fungsi untuk menghitung klaster
+# Dengan minimum support 0.4 atau (40%)
 def process_cluster(data):
-    min_support = 0.4  # Ubah menjadi persentase 0.4 atau (40%)
+    min_support = 0.4
     all_frequent_itemsets = apriori(data, min_support)
 
     clusters = defaultdict(set)
@@ -167,7 +215,10 @@ def process_cluster(data):
 
     # Proses iterasi klaster untuk membentuk file JSON yang menyimpan hasil klaster terpilih
     for terms, docs in clusters.items():
+
+        # Memisahkan terms yang dipisahkan oleh koma jika term lebih dari satu
         terms_list = terms.split(', ')
+
         entropy = calculate_entropy_overlap(docs)
         full_text = [data[int(doc[1:]) - 1] for doc in docs]
 
