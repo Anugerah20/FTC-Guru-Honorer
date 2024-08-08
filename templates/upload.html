@@ -6,11 +6,11 @@
 <div class="container mt-5">
      <h2>Clustering FTC</h2>
 
-     <style>
+     <!-- <style>
           .selected-cluster {
                font-weight: bold;
           }
-     </style>
+     </style> -->
 
      <!-- Tombol untuk menghapus data JSON, CSV, dan isi database table bersih -->
      <label>Hapus Data</label>
@@ -23,17 +23,24 @@
           <thead>
                <tr>
                     <th>Iteration</th>
+                    <th>Cluster Number</th>
                     <th>Terms</th>
                     <th>EO</th>
+                    <!-- <th>Total Documents</th> -->
+                    <!-- <th>Total Full Texts</th> -->
                     <th>Actions</th>
                </tr>
           </thead>
           <tbody>
                {% for item in json_data %}
-               <tr class="{% if item.selected %}selected-cluster{% endif %}">
+               {% for cluster in item.Clusters %}
+               <tr class="{% if cluster.selected %}selected-cluster{% endif %}">
                     <td>{{ item.Iteration }}</td>
-                    <td>{{ item.Terms | join(', ') }}</td>
-                    <td>{{ item.EO }}</td>
+                    <td>{{ cluster.Cluster_Number }}</td>
+                    <td>{{ cluster.Terms | join(', ') }}</td>
+                    <td>{{ cluster.EO }}</td>
+                    <!-- <td>{{ cluster.Total_Documents }}</td> -->
+                    <!-- <td>{{ cluster.Total_Full_Texts }}</td> -->
                     <td>
                          <button class="btn btn-dark" data-bs-toggle="modal"
                               data-bs-target="#detailsModal{{ loop.index }}">Lihat Documents</button>
@@ -48,15 +55,14 @@
                     <div class="modal-dialog modal-lg">
                          <div class="modal-content">
                               <div class="modal-header">
-                                   <h5 class="modal-title" id="detailsModalLabel{{ loop.index }}">Detail Dokuments {{
+                                   <h5 class="modal-title" id="detailsModalLabel{{ loop.index }}">Detail Documents {{
                                         item.Iteration }}</h5>
                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
                                         aria-label="Close"></button>
                               </div>
                               <div class="modal-body">
                                    <h6>Documents</h6>
-                                   <small>Total Documents: {{ item.Total_Documents }}</small>
-                                   <p>{{ item.Documents | join(', ') }}</p>
+                                   <p>{{ cluster.Documents | join(', ') }}</p>
                               </div>
                               <div class="modal-footer">
                                    <button type="button" class="btn btn-secondary"
@@ -72,16 +78,15 @@
                     <div class="modal-dialog modal-lg">
                          <div class="modal-content">
                               <div class="modal-header">
-                                   <h5 class="modal-title" id="fullTextModalLabel{{ loop.index }}">Detail Full Text
-                                        {{ item.Iteration }}</h5>
+                                   <h5 class="modal-title" id="fullTextModalLabel{{ loop.index }}">Detail Full Text {{
+                                        item.Iteration }}</h5>
                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
                                         aria-label="Close"></button>
                               </div>
                               <div class="modal-body">
                                    <h6>Full Text</h6>
-                                   <small>Total Full Text: {{ item.Total_Full_Texts}}</small>
                                    <ul>
-                                        {% for doc in item.Full_Text %}
+                                        {% for doc in cluster.Full_Text %}
                                         <li>{{ doc }}</li>
                                         {% endfor %}
                                    </ul>
@@ -93,6 +98,7 @@
                          </div>
                     </div>
                </div>
+               {% endfor %}
                {% endfor %}
           </tbody>
      </table>
