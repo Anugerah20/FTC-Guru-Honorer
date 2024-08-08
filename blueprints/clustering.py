@@ -1,19 +1,15 @@
-import random
-from itertools import combinations
+import itertools
+import time
+from collections import defaultdict
+from math import log, sqrt
 from flask import Blueprint, render_template, redirect, session, request, url_for, flash, jsonify, url_for
 import numpy as np
-from math import log, sqrt
-import math
 import pandas as pd
-from collections import Counter
 import json
 import os
-import re
 import mysql.connector
 from werkzeug.utils import secure_filename
-import logging # digunakan untuk debugging
-from collections import defaultdict, Counter
-import operator
+import logging
 
 clustering = Blueprint('clustering', __name__)
 
@@ -28,7 +24,6 @@ def db_connect(host, user, password, database):
     cursor = conn.cursor()
     return conn, cursor
 
-
 # Fungsi untuk memanggil data dari tabel bersih
 def fetch_data():
     conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
@@ -38,7 +33,6 @@ def fetch_data():
     conn.close()
     return [row[0] for row in rows]
 
-
 # Fungsi untuk menyimpan data ke tabel bersih
 def save_text_to_db(texts):
     conn, cursor = db_connect("localhost", "root", "", "guru_honorer")
@@ -47,76 +41,34 @@ def save_text_to_db(texts):
     cursor.close()
     conn.close()
 
-
+# Fungsi untuk ekstraksi terms
 def extract_terms(documents):
-    """
-    Mengambil semua istilah unik dari dokumen.
-    Args:
-        documents (list of str): Daftar dokumen, setiap dokumen berupa string.
-    Returns:
-        list: Daftar istilah unik yang sudah diurutkan.
-    """
-
     terms = set()
     for doc in documents:
         terms.update(doc.split())
     return sorted(terms)
 
-
+# Preprocessing dokumen
 def preprocess_documents(documents):
-    """
-    Memproses dokumen dengan memecah setiap dokumen menjadi set istilah.
-    Args:
-        documents (list of str): Daftar dokumen, setiap dokumen berupa string.
-    Returns:
-        list of set: Daftar set istilah untuk setiap dokumen.
-    """
-
     return [set(doc.split()) for doc in documents]
 
-
+# Menghasilkan kandidat itemset
 def generate_candidates(itemset_number, last_frequent_itemsets):
-    """
-    Menghasilkan kandidat itemset dengan ukuran tertentu dari itemset frekuensi terakhir.
-    Args:
-        itemset_number (int): Ukuran itemset yang akan dihasilkan.
-        last_frequent_itemsets (list of tuple): Daftar itemset frekuensi terakhir.
-    Returns:
-        list of tuple: Daftar kandidat itemset.
-    """
-
-    # Fungsi ini tidak boleh dipanggil untuk pembuatan itemset pertama
     if itemset_number == 1:
-        raise Exception(
-            "This function should not be called for the first itemset generation.")
+        raise Exception("This function should not be called for the first itemset generation.")
     else:
         temp_candidates = set()
-        # Lakukan perulangan terhadap pasangan dari set item yang sering muncul terakhir
         for i in range(len(last_frequent_itemsets)):
             for j in range(i + 1, len(last_frequent_itemsets)):
-                # Mengubah tupel menjadi set untuk memudahkan penggabungan
-                set1, set2 = set(last_frequent_itemsets[i]), set(
-                    last_frequent_itemsets[j])
-                # Gabungkan set hanya jika mereka memiliki kesamaan persis dengan itemset_number - 2 item yang sama
+                set1, set2 = set(last_frequent_itemsets[i]), set(last_frequent_itemsets[j])
                 if len(set1.intersection(set2)) == itemset_number - 2:
                     new_candidate = tuple(sorted(set1.union(set2)))
-                    # Memastikan kandidat baru memiliki jumlah item yang benar
                     if len(new_candidate) == itemset_number:
                         temp_candidates.add(new_candidate)
         return list(temp_candidates)
 
-
+# Menghitung itemset frekuensi
 def calculate_frequent_itemsets(documents, candidates, min_sup):
-    """
-    Menghitung itemset frekuensi dan dokumen yang mengandung itemset tersebut.
-    Args:
-        documents (list of set): Daftar set istilah untuk setiap dokumen.
-        candidates (list of tuple): Daftar kandidat itemset.
-        min_sup (float): Ambang batas dukungan minimum.
-    Returns:
-        list of tuple: Daftar itemset frekuensi beserta dokumen yang mengandung itemset tersebut.
-    """
-
     num_documents = len(documents)
     frequent_itemsets = []
     itemset_counts = [0] * len(candidates)
@@ -126,141 +78,93 @@ def calculate_frequent_itemsets(documents, candidates, min_sup):
         for doc_id, document in enumerate(documents):
             if set(candidate).issubset(document):
                 itemset_counts[i] += 1
-                itemset_documents[i].add(f"D{doc_id + 1}")
+                itemset_documents[i].add(f"D{doc_id+1}")
 
-    # Mengembalikan itemset frekuensi yang memenuhi ambang batas
     return [(candidates[i], itemset_documents[i]) for i in range(len(candidates)) if itemset_counts[i] / num_documents >= min_sup]
 
-
-def apriori(documents, min_sup):
-    """
-    Implementasi algoritma Apriori untuk menemukan itemset frekuensi.
-    Args:
-        documents (list of str): Daftar dokumen, setiap dokumen berupa string.
-        min_sup (float): Ambang batas dukungan minimum.
-        time (float): Waktu eksekusi algoritma apriori.
-    """
-
+# Menghasilkan frequent term set
+def generate_frequent_term_set(documents, min_sup):
     terms = extract_terms(documents)
     processed_docs = preprocess_documents(documents)
-    all_frequent_itemsets = []  # Daftar untuk menyimpan semua set item yang sering digunakan
+    all_frequent_itemsets = []
 
-    # Menghasilkan frequent itemset awal secara langsung dari term
-    last_frequent_itemsets = calculate_frequent_itemsets(
-        processed_docs, [tuple([term]) for term in terms], min_sup)
-
-    # Menyimpan set item awal yang sering digunakan
+    last_frequent_itemsets = calculate_frequent_itemsets(processed_docs, [tuple([term]) for term in terms], min_sup)
     all_frequent_itemsets.extend(last_frequent_itemsets)
 
     itemset_number = 1
-
     while True:
         itemset_number += 1
-        candidates = generate_candidates(
-            itemset_number, [itemset for itemset, _ in last_frequent_itemsets])
+        candidates = generate_candidates(itemset_number, [itemset for itemset, _ in last_frequent_itemsets])
+        last_frequent_itemsets = calculate_frequent_itemsets(processed_docs, candidates, min_sup)
 
-        # Menghitung set item yang sering muncul berikutnya
-        last_frequent_itemsets = calculate_frequent_itemsets(
-            processed_docs, candidates, min_sup)
-
-        # Berhenti jika tidak ada set item yang sering muncul berikutnya
         if not last_frequent_itemsets:
             break
 
-        # Menyimpan semua set item yang sering muncul berikutnya
         all_frequent_itemsets.extend(last_frequent_itemsets)
-
-        if itemset_number > 10:  # Pemeriksaan keamanan untuk mencegah loop tak terbatas
+        if itemset_number > 10:  # Safety check to prevent infinite loops
             break
 
-    return all_frequent_itemsets # Mengembalikan semua set item yang sering muncul
+    return {tuple(itemset): docs for itemset, docs in all_frequent_itemsets}
 
+# Menghitung entropy overlap
+def calculate_entropy_overlap(frequent_term_set, data):
+    entropy_overlap_results = {}
+    for term_set, documents in frequent_term_set.items():
+        entropy_overlap_sum = 0
+        for document in documents:
+            frequency = sum(document in documents for documents in frequent_term_set.values())
+            entropy_overlap = (-1/frequency) * log(1/frequency)
+            entropy_overlap_sum += entropy_overlap
 
-# Fungsi untuk menghitung klaster
-# Dengan minimum support 0.4 atau (40%)
+        entropy_overlap_results[term_set] = entropy_overlap_sum / len(documents)
+    return entropy_overlap_results
+
+# Proses klasterisasi FTC
 def process_cluster(data):
     min_support = 0.4
-    all_frequent_itemsets = apriori(data, min_support)
-
-    clusters = defaultdict(set)
-    terms_involved = set()
-
-    for itemset, docs in all_frequent_itemsets:
-        terms_involved.update(itemset)
-        clusters[', '.join(itemset)] = docs
-
-    # Fungsi untuk menghitung entropy overlap
-    def calculate_entropy_overlap(docs):
-        term_count = Counter()
-        total_terms = 0
-        total_docs = len(docs)
-
-        for doc in docs:
-            text = data[int(doc[1:]) - 1]
-            words = text.split()
-            term_count.update(words)
-            total_terms += len(words)
-
-        entropy = 0
-        for term, count in term_count.items():
-            probability = count / total_terms
-            entropy -= probability * math.log(probability, 2)
-
-        return entropy / total_docs
+    frequent_term_set = generate_frequent_term_set(data, min_support)
+    entropy_overlap_results = calculate_entropy_overlap(frequent_term_set, data)
 
     json_data = []
-    # Variabel untuk iterasi klatser
     iteration = 1
     selected_cluster = None
 
-    # Proses iterasi klaster untuk membentuk file JSON yang menyimpan hasil klaster terpilih
-    for terms, docs in clusters.items():
-
-        # Memisahkan terms yang dipisahkan oleh koma jika term lebih dari satu
-        terms_list = terms.split(', ')
-
-        entropy = calculate_entropy_overlap(docs)
+    for term_set, docs in frequent_term_set.items():
         full_text = [data[int(doc[1:]) - 1] for doc in docs]
-
-        # Melihat total documents dan full texts pada per iterasi klaster
-        total_documents = len(docs)
-        total_full_texts = len(full_text)
+        entropy = entropy_overlap_results[term_set]
 
         cluster_info = {
-            'Iteration': f'Iterasi ke-{iteration}',
-            'Terms': terms_list,
+            'Cluster_Number': f'Cluster {iteration}',
+            'Terms': list(term_set),
             'Documents': list(docs),
             'Full_Text': full_text,
             'EO': entropy,
-            'selected': False,  # Default to not selected
-            'Total_Documents': total_documents,
-            'Total_Full_Texts': total_full_texts
+            'selected': False
         }
 
-        # Memilih klaster dengan nilai entropy terendah
-        # Sebagai klaster terpilih
         if selected_cluster is None or entropy < selected_cluster['EO']:
             selected_cluster = cluster_info
 
-        json_data.append(cluster_info)
+        json_data.append({
+            'Iteration': iteration,
+            'Clusters': [cluster_info]
+        })
+
         iteration += 1
 
     if selected_cluster:
         selected_cluster['selected'] = True
 
-    return json_data, list(terms_involved), selected_cluster, total_documents, total_full_texts
-
+    return json_data, selected_cluster
 
 # Pilih folder untuk menyimpan file upload
 UPLOAD_FOLDER = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-
 # Hanya mengizinkan file csv
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'csv'}
-
 
 # Route klaster untuk proses upload file csv
 @clustering.route('/ftc', methods=['GET', 'POST'])
@@ -282,9 +186,9 @@ def upload_file():
             file.save(file_path)
             full_text = pd.read_csv(file_path)
             data = full_text['full_text'].tolist()
-            json_data, terms_involved, selected_cluster, total_documents, total_full_texts = process_cluster(data)
+            json_data, selected_cluster = process_cluster(data)
 
-            with open(os.path.join(UPLOAD_FOLDER, 'ftc_cluster4.json'), 'w') as json_file:
+            with open(os.path.join(UPLOAD_FOLDER, 'ftc_cluster.json'), 'w') as json_file:
                 json.dump(json_data, json_file, indent=4)
 
             save_text_to_db(data)
@@ -293,24 +197,18 @@ def upload_file():
         return render_template(
             'upload.html',
             json_data=json_data,
-            terms_involved=terms_involved,
             selected_cluster=selected_cluster,
             username=username,
-            current_url=request.path,
-            total_documents=total_documents,
-            total_full_texts=total_full_texts
+            current_url=request.path
         )
 
     username = session.get('username')
     return render_template(
         'upload.html',
         json_data=None,
-        terms_involved=None,
         selected_cluster=None,
         username=username,
-        current_url=request.path,
-        total_documents=0,
-        total_full_texts=0
+        current_url=request.path
     )
 
 # Route proses untuk menghapus file csv dan json
@@ -319,15 +217,15 @@ def delete_file(file_path, file_type):
         if os.path.exists(file_path):
             os.remove(file_path)
             logging.info(f'File {file_type} berhasil dihapus: {file_path}')
-            flash(f'File {file_type} berhasil dihapus','success')
+            flash(f'File {file_type} berhasil dihapus', 'success')
         else:
             logging.warning(f'File {file_type} tidak ditemukan: {file_path}')
-            print(f'File {file_type} tidak ditemukan','warning')
+            flash(f'File {file_type} tidak ditemukan', 'warning')
     except Exception as e:
         logging.error(f'Gagal menghapus {file_type}: {file_path} - {e}')
-        print(f'Gagal menghapus {file_type}','danger')
+        flash(f'Gagal menghapus {file_type}', 'danger')
 
-# Route buat hapus data json, csv, dan database
+# Route untuk menghapus data json, csv, dan database
 @clustering.route('/delete-clustering-ftc', methods=['GET', 'DELETE'])
 def delete_cluster():
     try:
@@ -342,23 +240,20 @@ def delete_cluster():
         csv_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/hasil_preprocesing_guru2.csv'
         delete_file(csv_file_path, 'File CSV')
 
-        # json_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_clusterrr3.json'
-        json_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_cluster4.json'
+        json_file_path = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_cluster.json'
         delete_file(json_file_path, 'File JSON')
 
         flash('Data berhasil dihapus dari database', 'success')
         return redirect(url_for('clustering.upload_file'))
 
     except Exception as e:
-        logging.error(f'Gagal menghapus data dan file JSON: {e}')
-        flash(f'Gagal menghapus data dan file JSON', 'danger')
+        logging.error(f'Gagal menghapus data dari database: {e}')
+        flash('Gagal menghapus data dari database', 'danger')
         return redirect(url_for('clustering.upload_file'))
 
     finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+        cursor.close()
+        conn.close()
 
 # Route untuk menampilkan hasil klaster
 @clustering.route('/ftc/results', methods=['GET'])
@@ -366,7 +261,7 @@ def show_results():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
 
-    file_path = os.path.join(UPLOAD_FOLDER, 'ftc_cluster4.json')
+    file_path = os.path.join(UPLOAD_FOLDER, 'ftc_cluster.json')
     if not os.path.exists(file_path):
         flash('Tidak ada hasil klaster yang tersedia.', 'danger')
         return redirect(url_for('clustering.upload_file'))
@@ -382,6 +277,7 @@ def show_results():
         current_url=request.path
     )
 
+
 # Fungsi untuk memuat data JSON dari file
 def load_json_data(filepath):
     try:
@@ -395,10 +291,20 @@ def load_json_data(filepath):
 
 # Fungsi untuk menghitung purity
 def calculate_purity(clustering_result):
-    total_documents = sum(len(cluster["Documents"]) for cluster in clustering_result)
+
+    # EDITOR: NABIL 08/08/2024
+    # total_documents = sum(len(cluster["Documents"]) for cluster in clustering_result)
+
+    total_documents = sum(len(cluster["frequent_term_set"]) for cluster in clustering_result)
+
     max_labels = 0
     for cluster in clustering_result:
-        documents = cluster["Documents"]
+
+        # EDITOR: NABIL 08/08/2024
+        # documents = cluster["Documents"]
+
+        documents = cluster["frequent_term_set"]
+
         label_count = len(documents)  # Semua dokumen dianggap satu kelas
         max_labels += label_count
     purity = max_labels / total_documents
@@ -411,8 +317,13 @@ def index():
         return redirect(url_for('auth.login'))
 
     username = session['username']
-    # filepath = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_clusterrr3.json'
-    filepath = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_cluster4.json'
+
+    # EDITOR: NABIL 08/08/2024
+    # filepath = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_cluster4.json'
+
+    # EDITOR: NABIL 08/08/2024
+    filepath = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc.json'
+
     clustering_result, error_message = load_json_data(filepath)
 
     if clustering_result:
@@ -422,7 +333,8 @@ def index():
         # metrik adalah jumlah dokumen dalam cluster, jumlah label maksimum, dan proporsi label maksimum
         cluster_metrics = [] # simpan kedalam
         for cluster_id, cluster in enumerate(clustering_result):
-            cluster_size = len(cluster["Documents"])
+            # cluster_size = len(cluster["Documents"])
+            cluster_size = len(cluster["frequent_term_set"])
             label_count = cluster_size  # Semua dokumen dianggap satu kelas
             proportion = label_count / cluster_size
             # cluster_metrics.append berfungsi untuk menambahkan data ke dalam list
@@ -445,4 +357,4 @@ def index():
         cluster_metrics=cluster_metrics,
         username=username,
         current_url=request.path
-        )
+    )
