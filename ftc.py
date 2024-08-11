@@ -134,63 +134,7 @@ def remove_document(entropy_overlap_results, min_support):
 
     return updated_results
 
-# def ftc(data, min_support):
-
-#     # Time start
-#     start = time.time()
-
-#     cluster = {}
-
-#     frequent_term_set = generate_frequent_term_set(data, min_support)
-
-#     # i = 0
-#     # while len(frequent_term_set) > 1:
-#     #     eo_frequent_term_set = calculate_entropy_overlap(frequent_term_set, data)
-
-#     #     removed = remove_document(eo_frequent_term_set, min_support)
-
-#     #     for term_set, (documents, entropy_overlap) in eo_frequent_term_set.items():
-#     #         cluster[term_set] = (documents, entropy_overlap)
-
-#     #     frequent_term_set = {term_set: document[0] for term_set, document in removed.items()}
-#     #     i += 1
-
-
-#     iterations = []
-#     i = 0
-
-#     while len(frequent_term_set) > 1:
-#         eo_frequent_term_set = calculate_entropy_overlap(frequent_term_set, data)
-#         removed = remove_document(eo_frequent_term_set, min_support)
-
-#         iteration_results = {
-#             'iteration': i + 1,
-#             'frequent_term_set': eo_frequent_term_set
-#         }
-#         iterations.append(iteration_results)
-
-#         for term_set, (documents, entropy_overlap) in eo_frequent_term_set.items():
-#             cluster[term_set] = (documents, entropy_overlap)
-
-#         frequent_term_set = {term_set: document[0] for term_set, document in removed.items()}
-#         i += 1
-
-#     # Hasil klaster setelah FTC
-#     print(" ")
-#     print("Cluster results after FTC:")
-
-#     for term_set, (documents, entropy_overlap) in cluster.items():
-#         print(f"Term Set: {' '.join(term_set)}, Documents: {sorted(list(documents))}, Entropy Overlap: {entropy_overlap}")
-
-#     # Time end
-#     end = time.time()
-
-#     print(f"Waktu eksekusi: {(end - start):.2f} detik")
-
-#     return cluster
-
-
-# NEW NEW
+# Fungsi FTC
 def ftc(data, min_support):
     start = time.time()
     cluster = {}
@@ -224,7 +168,8 @@ def ftc(data, min_support):
 def main():
 
     # Minumum support 40%
-    min_support = 0.4
+    # min_support = 0.4
+    min_support = 0.2
 
     data = [
        "honorer jokowi sd tes",
