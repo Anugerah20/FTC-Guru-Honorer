@@ -138,8 +138,14 @@ if __name__ == "__main__":
        "guru honorer sd tes",
        "honorer jokowi sd tes",
        "guru gaji wowo",
-       "wowo gaji guru"
+       "wowo gaji guru",
+       "honorer jokowi sd prima",
+       "kebijakan jokowi sd prima",
+       "pasal jokowi sd prima",
     ]
-    min_sup = 0.4  # Minimum support (40%)
+    # min_sup = 0.4  # Minimum support (40%)
+    # min_sup = 0.3  # Minimum support (30%)
+    # min_sup = 0.2  # Minimum support (20%)
+    min_sup = 0.1  # Minimum support (10%)
 
     apriori(documents, min_sup)
