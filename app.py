@@ -142,6 +142,9 @@ def cluster_view():
 
             # Ambil data berisi full_text
             data = df['full_text'].tolist()
+
+            # get username
+            username = session.get('username')
         else:
             return "No file uploaded", 400
 
@@ -158,14 +161,16 @@ def cluster_view():
 
         print(f"Klaster yang dihasilkan: {iterations}")
 
+
         # Tampilkan hasil klasterisasi
-        return render_template('ftc.html', iterations=iterations, username=session.get('username'))
+        return render_template('ftc.html', iterations=iterations, username=username)
 
     else:
-        # Jika request adalah GET, tampilkan halaman upload
-        return render_template('ftc.html')
+        # get username
+        username = session.get('username')
 
-# ! Tinggal menampilkan kandidat klaster yang nilai Entropy Overlap terkecil
+        # Jika request adalah GET, tampilkan halaman upload
+        return render_template('ftc.html', username=username)
 
 # Route untuk menampilkan hasil cluster formatted json
 @app.route('/view-cluster', methods=['GET'])
@@ -179,6 +184,7 @@ def view_cluster():
         with open(result_filepath, 'r') as f:
             iterations = json.load(f)
 
+        # get username
         username = session.get('username')
 
         # Pass data to the template
