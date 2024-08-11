@@ -6,7 +6,7 @@ from blueprints.main import main
 from blueprints.clustering import clustering
 
 # TESTING
-from flask import Flask, app, render_template, request, redirect, url_for, session, flash
+from flask import Flask, app, render_template, request, redirect, url_for, session, flash, jsonify
 import pandas as pd
 from ftc import ftc
 import json
@@ -48,10 +48,17 @@ def convert_to_string(data):
     elif isinstance(data, set):
         return list(data)
     elif isinstance(data, tuple):
-        return tuple(convert_to_string(i) for i in data)
+
+        if len(data) == 1:
+            return str(data[0])
+        else:
+            return tuple(convert_to_string(i) for i in data)
+
+        # return ', '.join([str(i) for i in data])
     else:
         return data
 
+'''
 
 # FTC
 @app.route('/cluster', methods=['GET', 'POST'])
@@ -60,10 +67,20 @@ def cluster_view():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
 
-    # Minimum support 0,4
-    min_support = 0.4
+    # Default minimum support
+    # Minimum support 0.4
+
+    # min_support = 0.1
+    # min_support = 0.2
+    # min_support = 0.3
+    # min_support = 0.4
+    # min_support = 0.5
 
     if request.method == 'POST':
+
+        # Mengambil nilai minimum support dari form
+        min_support = float(request.form['min_support'])
+
         # Ambil file dari form
         file = request.files['file']
         if file:
@@ -90,14 +107,14 @@ def cluster_view():
     # Run FTC
     iterations = ftc(data, min_support)
 
-    # Konversi hasil FTC jika ada kunci yang menggunakan tuple menjadi string (opsional jika diperlukan)
+    # Konversi hasil FTC jika ada kunci yang menggunakan tuple menjadi string
     iterations = convert_to_string(iterations)
 
 
     # Simpan hasil FTC ke dalam file JSON
     result_filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'ftc.json')
     with open(result_filepath, 'w') as f:
-        json.dump(iterations, f, indent=4)  # `indent=4` digunakan untuk membuat format JSON lebih terbaca
+        json.dump(iterations, f, indent=4)  # `indent=4` untuk membuat format JSON lebih terbaca
 
     print(" ")
 
@@ -105,6 +122,71 @@ def cluster_view():
     print(f"Klaster yang dihasilkan: {iterations}")
 
     return render_template('ftc.html', iterations=iterations, username=username)
+'''
+
+@app.route('/cluster', methods=['GET', 'POST'])
+def cluster_view():
+    # Cek auth
+    if 'username' not in session:
+        return redirect(url_for('auth.login'))
+
+    if request.method == 'POST':
+        # Mengambil nilai minimum support dari form
+        min_support = float(request.form['min_support'])
+
+        # Ambil file dari form
+        file = request.files['file']
+        if file:
+            # Membaca file CSV
+            df = pd.read_csv(file)
+
+            # Ambil data berisi full_text
+            data = df['full_text'].tolist()
+        else:
+            return "No file uploaded", 400
+
+        # Jalankan FTC
+        iterations = ftc(data, min_support)
+
+        # Konversi hasil FTC jika ada kunci yang menggunakan tuple menjadi string
+        iterations = convert_to_string(iterations)
+
+        # Simpan hasil FTC ke dalam file JSON
+        result_filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'ftc.json')
+        with open(result_filepath, 'w') as f:
+            json.dump(iterations, f, indent=4)
+
+        print(f"Klaster yang dihasilkan: {iterations}")
+
+        # Tampilkan hasil klasterisasi
+        return render_template('ftc.html', iterations=iterations, username=session.get('username'))
+
+    else:
+        # Jika request adalah GET, tampilkan halaman upload
+        return render_template('ftc.html')
+
+# ! Tinggal menampilkan kandidat klaster yang nilai Entropy Overlap terkecil
+
+# Route untuk menampilkan hasil cluster formatted json
+@app.route('/view-cluster', methods=['GET'])
+def view_cluster():
+    # Cek auth
+    if 'username' not in session:
+        return redirect(url_for('auth.login'))
+
+    result_filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'ftc.json')
+    if os.path.exists(result_filepath):
+        with open(result_filepath, 'r') as f:
+            iterations = json.load(f)
+
+        username = session.get('username')
+
+        # Pass data to the template
+        return render_template('view_cluster.html', iterations=iterations, username=username)
+    else:
+        return jsonify({"error": "No clustering results found"}), 404
+
+
 
 if __name__ == '__main__':
      # Buat folder 'uploads' jika belum ada
