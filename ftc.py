@@ -140,6 +140,7 @@ def ftc(data, min_support):
     cluster = {}
     iterations = []
 
+
     frequent_term_set = generate_frequent_term_set(data, min_support)
     i = 0
 
@@ -147,9 +148,20 @@ def ftc(data, min_support):
         eo_frequent_term_set = calculate_entropy_overlap(frequent_term_set, data)
         removed = remove_document(eo_frequent_term_set, min_support)
 
+        # NABIL: 11/08/2024
+        # Mendapatkan entropy overlap terkecil dari setiap iterasi
+        min_entropy_overlap = min(eo_frequent_term_set[term_set][1] for term_set in eo_frequent_term_set)
+
+        # Mendapatkan term set yang memiliki entropy overlap terkecil di setiap iterasi
+        selected_term_sets = {term_set: details for term_set, details in eo_frequent_term_set.items() if details[1] == min_entropy_overlap}
+        lowest_candidates = sorted(selected_term_sets.keys(), key=lambda x: eo_frequent_term_set[x][1])
+        lowest_candidates = {lowest_candidates[0]: selected_term_sets[lowest_candidates[0]]}  # Pilih klaster pertama
+
         iteration_results = {
             'iteration': i + 1,
-            'frequent_term_set': eo_frequent_term_set
+            'frequent_term_set': eo_frequent_term_set,
+            'lowest_candidates': lowest_candidates,
+            'min_entropy_overlap': min_entropy_overlap
         }
         iterations.append(iteration_results)
 
@@ -187,6 +199,7 @@ def main():
 
     print(f"Klaster yang dihasilkan: {cluster}")
 
+    print(" ")
     for iteration in cluster:
         print(f"Iteration {iteration['iteration']}:")
         for term_set, (documents, entropy_overlap) in iteration['frequent_term_set'].items():
@@ -196,6 +209,17 @@ def main():
             else:
                 terms_display = ', '.join(term_set)  # Jika lebih dari satu term, pisahkan dengan koma
             print(f"Term Set: {terms_display}, Documents: {sorted(list(documents))}, Entropy Overlap: {entropy_overlap}")
+
+
+        # Menampilkan nilai entropy overlap terendah di setiap iterasi
+        print(f"Minimum Entropy Overlap: {iteration['min_entropy_overlap']}")
+
+        # Menampilkan kandidat klaster terendah
+        print(f"Kandidat Klaster Terendah:")
+        for term_set, (documents, entropy_overlap) in iteration['lowest_candidates'].items():
+            terms_display = ', '.join(term_set)  # Jika lebih dari satu term, pisahkan dengan koma
+            print(f"Term Set: {terms_display}, Documents: {sorted(list(documents))}, Entropy Overlap: {entropy_overlap}")
+        print(" ")
 
 if __name__ == "__main__":
     main()
