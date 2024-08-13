@@ -142,6 +142,15 @@ if __name__ == "__main__":
     # Minimum support 0.4 (40%)
     min_sup = 0.4
 
+    # Minimum support 0.3 (30%)
+    # min_sup = 0.3
+
+    # Minimum support 0.3 (20%)
+    # min_sup = 0.2
+
+    # Minimum support 0.3 (10%)
+    # min_sup = 0.1
+
     apriori(documents, min_sup)
 
     # Kesimpulan: Semakin banyak jumlah dataset, maka semakin lama waktu eksekusi algoritma apriori
