@@ -11,8 +11,8 @@
           <input type="file" class="form-control" id="file" name="file" required>
 
           <!-- Form untuk mengisi minimum support -->
-          <label for="min_support" class="mt-3">Minimum Support (0.1 - 0.5)</label>
-          <input type="number" step="0.1" min="0.1" max="0.5" class="form-control" id="min_support" name="min_support"
+          <label for="min_support" class="mt-3">Minimum Support (0.1 - 0.9)</label>
+          <input type="number" step="0.1" min="0.1" max="0.9" class="form-control" id="min_support" name="min_support"
                required>
 
           <button type="submit" class="btn btn-dark mt-2">Unggah</button>
@@ -42,11 +42,10 @@
                          {% endfor %}
                     </tbody>
                </table>
-               <!-- Menampilkan Entropy Overlap Terendah atau terpilih dan term set -->
-               <!-- Menampilkan Entropy Overlap Terendah atau terpilih dan term set -->
-               <p>Entropy Overlap Terpilih: {{ iteration.min_entropy_overlap }} - {{ iteration.lowest_candidates |
-                    join(', ') | replace("'", "") | replace("(", "") | replace(")", "") | replace(",", "") }}
-               </p>
+
+               <p>Entropy Overlap Terpilih: {{ iteration.lowest_candidates | replace("'", "") | replace("(", "") |
+                    replace(")", "") |
+                    replace(",", " ") }}</p>
                <hr>
           </div>
           {% endfor %}
