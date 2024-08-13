@@ -39,6 +39,15 @@ def calculate_frequent_itemsets(documents, candidates, min_sup):
                 itemset_counts[i] += 1
                 itemset_documents[i].add(f"D{doc_id+1}")
 
+    # NEW UPDATE 12/08/2024
+    # for i in range(len(candidates)):
+    #     support = itemset_counts[i] / num_documents
+    #     if support >= min_sup:
+    #         frequent_itemsets.append((candidates[i], itemset_documents[i]))
+
+    # return frequent_itemsets
+
+    # EDITOR: NABIL 12/08/2024
     return [(candidates[i], itemset_documents[i]) for i in range(len(candidates)) if itemset_counts[i] / num_documents >= min_sup]
 
 def generate_frequent_term_set(documents, min_sup):
@@ -102,6 +111,7 @@ def calculate_entropy_overlap(frequent_term_set, data):
 
     return entropy_overlap_results
 
+# EDITOR: 12/08/2024
 def remove_document(entropy_overlap_results, min_support):
     removed_docs = []
     lowest_dicts = []
@@ -134,6 +144,26 @@ def remove_document(entropy_overlap_results, min_support):
 
     return updated_results
 
+
+# NEW UPDATE 12/08/2024
+# def remove_document(entropy_overlap_results, min_support):
+#     removed_docs = []
+#     lowest_value = float('inf')
+
+#     for term_set, (documents, frequency) in entropy_overlap_results.items():
+#         if frequency < lowest_value:
+#             lowest_value = frequency
+#             removed_docs = documents
+
+#     updated_results = {}
+#     for term_set, (documents, frequency) in entropy_overlap_results.items():
+#         remaining_docs = [doc for doc in documents if doc not in removed_docs]
+#         if len(remaining_docs) >= min_support:
+#             updated_results[term_set] = (remaining_docs, frequency)
+
+#     return updated_results
+
+
 # Fungsi FTC
 def ftc(data, min_support):
     start = time.time()
@@ -145,7 +175,13 @@ def ftc(data, min_support):
     i = 0
 
     while len(frequent_term_set) > 1:
+
+        # EDITOR: NABIL 12/08/2024
         eo_frequent_term_set = calculate_entropy_overlap(frequent_term_set, data)
+
+        # NEW UPDATE 12/08/2024
+        # eo_frequent_term_set = calculate_entropy_overlap(frequent_term_set)
+
         removed = remove_document(eo_frequent_term_set, min_support)
 
         # NABIL: 11/08/2024
@@ -176,50 +212,120 @@ def ftc(data, min_support):
 
     return iterations
 
+# EDITOR: NABIL 12/08/2024
+# def main():
+
+#     # Minumum support 10%
+#     # min_support = 0.1
+
+#     # Minimum support 20%
+#     # min_support = 0.2
+
+#     # Minimum support 30%
+#     # min_support = 0.3
+
+#     # Minumum support 40%
+#     min_support = 0.4
+
+#     # Minimum support 50%
+#     # min_support = 0.5
+
+#     # Minimum support 60%
+#     # min_support = 0.6
+
+#     # Minimum support 70%
+#     # min_support = 0.7
+
+#     # Minimum support 80%
+#     # min_support = 0.8
+
+#     # Minimum support 90%
+#     # min_support = 0.9
+
+#     data = [
+#        "honorer jokowi sd tes",
+#        "owi jokowi",
+#        "guru honorer sd tes",
+#        "guru jokowi sd gaji",
+#        "honorer owi tes sd",
+#        "wowo gaji"
+#     ]
+
+#     # Run FTC dengan nilai min_support saat ini
+#     cluster = ftc(data, min_support)
+
+#     print(" ")
+#     # print(cluster)
+
+#     # Hasil klaster
+#     print(f"Klaster yang dihasilkan: {cluster}")
+
+#     print(" ")
+#     for iteration in cluster:
+#         print(f"Iteration {iteration['iteration']}:")
+#         for term_set, (documents, entropy_overlap) in iteration['frequent_term_set'].items():
+#             # Menentukan format output untuk term_set
+#             if len(term_set) == 1:
+#                 terms_display = term_set[0]  # Jika hanya satu term, tampilkan tanpa koma
+#             else:
+#                 terms_display = ', '.join(term_set)  # Jika lebih dari satu term, pisahkan dengan koma
+#             print(f"Term Set: {terms_display}, Documents: {sorted(list(documents))}, Entropy Overlap: {entropy_overlap}")
+
+
+#         # Menampilkan nilai entropy overlap terendah di setiap iterasi
+#         print(f"Minimum Entropy Overlap: {iteration['min_entropy_overlap']}")
+
+#         # Menampilkan kandidat klaster terendah
+#         print(f"Kandidat Klaster Terendah:")
+#         for term_set, (documents, entropy_overlap) in iteration['lowest_candidates'].items():
+#             terms_display = ', '.join(term_set)  # Jika lebih dari satu term, pisahkan dengan koma
+#             print(f"Term Set: {terms_display}, Documents: {sorted(list(documents))}, Entropy Overlap: {entropy_overlap}")
+#         print(" ")
 
 def main():
-
-    # Minumum support 40%
-    # min_support = 0.4
-    min_support = 0.2
-
+    # Data yang digunakan untuk clustering
     data = [
-       "honorer jokowi sd tes",
-       "owi jokowi",
-       "guru honorer sd tes",
-       "guru jokowi sd gaji",
-       "honorer owi tes sd",
-       "wowo gaji"
+        # "honorer jokowi sd tes",
+        # "owi jokowi",
+        # "guru honorer sd tes",
+        # "guru jokowi sd gaji",
+        # "honorer owi tes sd",
+        # "wowo gaji"
     ]
 
-    cluster = ftc(data, min_support)
+    # Daftar nilai minimum support yang akan diuji
+    min_support_values = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
-    print(" ")
-    # print(cluster)
+    # Looping untuk menguji setiap nilai min_support
+    for min_support in min_support_values:
+        print(f"Testing with min_support = {min_support}")
 
-    print(f"Klaster yang dihasilkan: {cluster}")
+        # Jalankan FTC dengan nilai min_support saat ini
+        cluster = ftc(data, min_support)
 
-    print(" ")
-    for iteration in cluster:
-        print(f"Iteration {iteration['iteration']}:")
-        for term_set, (documents, entropy_overlap) in iteration['frequent_term_set'].items():
-            # Menentukan format output untuk term_set
-            if len(term_set) == 1:
-                terms_display = term_set[0]  # Jika hanya satu term, tampilkan tanpa koma
-            else:
-                terms_display = ', '.join(term_set)  # Jika lebih dari satu term, pisahkan dengan koma
-            print(f"Term Set: {terms_display}, Documents: {sorted(list(documents))}, Entropy Overlap: {entropy_overlap}")
-
-
-        # Menampilkan nilai entropy overlap terendah di setiap iterasi
-        print(f"Minimum Entropy Overlap: {iteration['min_entropy_overlap']}")
-
-        # Menampilkan kandidat klaster terendah
-        print(f"Kandidat Klaster Terendah:")
-        for term_set, (documents, entropy_overlap) in iteration['lowest_candidates'].items():
-            terms_display = ', '.join(term_set)  # Jika lebih dari satu term, pisahkan dengan koma
-            print(f"Term Set: {terms_display}, Documents: {sorted(list(documents))}, Entropy Overlap: {entropy_overlap}")
         print(" ")
+        # Print hasil clustering
+        print(f"Klaster yang dihasilkan untuk min_support = {min_support}:")
+
+        for iteration in cluster:
+            print(f"Iteration {iteration['iteration']}:")
+            for term_set, (documents, entropy_overlap) in iteration['frequent_term_set'].items():
+                # Menentukan format output untuk term_set
+                if len(term_set) == 1:
+                    terms_display = term_set[0]  # Jika hanya satu term, tampilkan tanpa koma
+                else:
+                    terms_display = ', '.join(term_set)  # Jika lebih dari satu term, pisahkan dengan koma
+                print(f"Term Set: {terms_display}, Documents: {sorted(list(documents))}, Entropy Overlap: {entropy_overlap}")
+
+            # Menampilkan nilai entropy overlap terendah di setiap iterasi
+            print(f"Minimum Entropy Overlap: {iteration['min_entropy_overlap']}")
+
+            # Menampilkan kandidat klaster terendah
+            print(f"Kandidat Klaster Terendah:")
+            for term_set, (documents, entropy_overlap) in iteration['lowest_candidates'].items():
+                terms_display = ', '.join(term_set)  # Jika lebih dari satu term, pisahkan dengan koma
+                print(f"Term Set: {terms_display}, Documents: {sorted(list(documents))}, Entropy Overlap: {entropy_overlap}")
+            print(" ")
 
 if __name__ == "__main__":
     main()
