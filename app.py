@@ -145,26 +145,24 @@ def cluster_view():
 
             # get username
             username = session.get('username')
+
+            # Jalankan FTC
+            iterations = ftc(data, min_support)
+
+            # Konversi hasil FTC jika ada kunci yang menggunakan tuple menjadi string
+            iterations = convert_to_string(iterations)
+
+            # Simpan hasil FTC ke dalam file JSON
+            result_filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'ftc.json')
+            with open(result_filepath, 'w') as f:
+                json.dump(iterations, f, indent=4)
+
+            print(f"Klaster yang dihasilkan: {iterations}")
+
+            # Tampilkan hasil klasterisasi
+            return render_template('ftc.html', iterations=iterations, username=username)
         else:
             return "No file uploaded", 400
-
-        # Jalankan FTC
-        iterations = ftc(data, min_support)
-
-        # Konversi hasil FTC jika ada kunci yang menggunakan tuple menjadi string
-        iterations = convert_to_string(iterations)
-
-        # Simpan hasil FTC ke dalam file JSON
-        result_filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'ftc.json')
-        with open(result_filepath, 'w') as f:
-            json.dump(iterations, f, indent=4)
-
-        print(f"Klaster yang dihasilkan: {iterations}")
-
-
-        # Tampilkan hasil klasterisasi
-        return render_template('ftc.html', iterations=iterations, username=username)
-
     else:
         # get username
         username = session.get('username')
