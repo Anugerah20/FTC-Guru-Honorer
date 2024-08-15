@@ -35,7 +35,8 @@
 
                                    <td>{{ term_set | replace("'", "") | replace("(", "") | replace(")", "") |
                                         replace(",", "") }}</td>
-                                   <td>{{ details[0] | join(', ') }}</td>
+                                   <!-- <td>{{ details[0] | join(', ') }}</td> -->
+                                   <td>{{ details[0] }}</td>
                                    <td>{{ details[1] }}</td>
                               </tr>
                               {% endfor %}
