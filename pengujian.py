@@ -550,8 +550,7 @@ label_dict = {
     "D255": "gaji",
     "D239": "gaji",
     "D204": "gaji",
-    "D535": "gaji",
-    # Tambahkan label dokumen lainnya jika ada
+    "D535": "gaji"
 }
 
 def calculate_purity_per_cluster(clusters, label_dict, accumulated_docs=None):
