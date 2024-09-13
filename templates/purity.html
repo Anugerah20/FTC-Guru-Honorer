@@ -5,32 +5,15 @@
 {% block content %}
 
 <body>
+     <style>
+          th,
+          td {
+               text-align: left;
+          }
+     </style>
      <div class="container">
-          <h2 class="my-4">Hasil Purity</h2>
-          <span class="badge rounded-pill text-bg-dark mb-2">Purity Score: {{ purity }}</span>
-          {% if clusters %}
-          <table class="table table-bordered">
-               <thead>
-                    <tr>
-                         <th>Cluster ID</th>
-                         <th>Jumlah Tweet Setiap Klaster</th>
-                         <th>Jumlah Tweet Maksimum di Setiap Klaster</th>
-                         <th>Proportion</th>
-                    </tr>
-               </thead>
-               <tbody>
-                    {% for metric in cluster_metrics %}
-                    <tr>
-                         <td>{{ metric['Cluster ID'] }}</td>
-                         <td>{{ metric['Number of Tweets'] }}</td>
-                         <td>{{ metric['Maximum Number of Tweets'] }}</td>
-                         <td>{{ metric['Proportion'] }}</td>
-                    </tr>
-                    {% endfor %}
-               </tbody>
-          </table>
-          {% else %}
-          <p>Belum ada data yang diuji.</p>
-          {% endif %}
-     </div>
-     {% endblock %}
+          <h3 class="mt-4">Hasil Purity Clustering</h1>
+               <div class="mt-4">
+                    {{ table_html|safe }}
+               </div>
+               {% endblock %}
