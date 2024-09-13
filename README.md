@@ -9,13 +9,6 @@
 # INFO!
 -  Di branch dev-nabil Mysql + SQLAlchemy + ORM (Tidak ada perintah kode SQL dikodingannya)
 -  Pada branch mysql-dev (Ada perinth kode SQL dikodingannya)
-
-## METODE KLASTERISASI FTC
-1. Branch metode-ftc -> Menerapkan klasterisasi FTC tetapi belum menandai klaster kandidat
-2. Branch baru-ftc -> Sudah menerapkan FTC dan terdapat tanda klaster kandidat
-3. Branch mysql-dev -> Pembaruan perintah SQL yang sudah menggunakan MySQL
-4. dev-nabil -> Belum menerapkan SQL di MySQL
-5. main -> Belum di update dari awal
   
 ## API
 1. Proses crawling dataset csv
