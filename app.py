@@ -53,76 +53,9 @@ def convert_to_string(data):
             return str(data[0])
         else:
             return tuple(convert_to_string(i) for i in data)
-
-        # return ', '.join([str(i) for i in data])
     else:
         return data
 
-'''
-
-# FTC
-@app.route('/cluster', methods=['GET', 'POST'])
-def cluster_view():
-    # Cek auth
-    if 'username' not in session:
-        return redirect(url_for('auth.login'))
-
-    # Default minimum support
-    # Minimum support 0.4
-
-    # min_support = 0.1
-    # min_support = 0.2
-    # min_support = 0.3
-    # min_support = 0.4
-    # min_support = 0.5
-
-    if request.method == 'POST':
-
-        # Mengambil nilai minimum support dari form
-        min_support = float(request.form['min_support'])
-
-        # Ambil file dari form
-        file = request.files['file']
-        if file:
-            # Membaca file csv
-            df = pd.read_csv(file)
-
-            # Ambil data berisi full_text
-            data = df['full_text'].tolist()
-        else:
-            return "No file uploaded", 400
-    else:
-        # Data default jika tidak ada file yang diupload
-        data = [
-            # "honorer jokowi sd tes",
-            # "owi jokowi",
-            # "guru honorer sd tes",
-            # "honorer jokowi sd tes",
-            # "guru gaji wowo",
-            # "wowo gaji guru"
-        ]
-
-    username = session.get('username')
-
-    # Run FTC
-    iterations = ftc(data, min_support)
-
-    # Konversi hasil FTC jika ada kunci yang menggunakan tuple menjadi string
-    iterations = convert_to_string(iterations)
-
-
-    # Simpan hasil FTC ke dalam file JSON
-    result_filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'ftc.json')
-    with open(result_filepath, 'w') as f:
-        json.dump(iterations, f, indent=4)  # `indent=4` untuk membuat format JSON lebih terbaca
-
-    print(" ")
-
-    # print(iterations)
-    print(f"Klaster yang dihasilkan: {iterations}")
-
-    return render_template('ftc.html', iterations=iterations, username=username)
-'''
 
 @app.route('/cluster', methods=['GET', 'POST'])
 def cluster_view():
