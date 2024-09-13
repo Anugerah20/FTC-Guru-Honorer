@@ -5,12 +5,6 @@
 {% block content %}
 
 <div class="container mt-5">
-     <!-- Form untuk upload file CSV -->
-     <!-- <form action="/cluster" method="post" enctype="multipart/form-data">
-          <label for="file">Upload CSV File:</label>
-          <input type="file" class="form-control" id="file" name="file" required>
-          <button type="submit" class="btn btn-dark mt-2">Unggah</button>
-     </form> -->
 
      <h2>Hasil Clustering FTC</h1>
 
@@ -30,12 +24,8 @@
                          <tbody>
                               {% for term_set, details in iteration.frequent_term_set.items() %}
                               <tr>
-                                   <!-- <td>{{ term_set }}</td> -->
-                                   <!-- <td>{{ details[0] }}</td> -->
-
                                    <td>{{ term_set | replace("'", "") | replace("(", "") | replace(")", "") |
                                         replace(",", "") }}</td>
-                                   <!-- <td>{{ details[0] | join(', ') }}</td> -->
                                    <td>{{ details[0] }}</td>
                                    <td>{{ details[1] }}</td>
                               </tr>
