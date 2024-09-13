@@ -256,403 +256,70 @@ def delete_cluster():
         cursor.close()
         conn.close()
 
-# Route untuk menampilkan hasil klaster
-@clustering.route('/ftc/results', methods=['GET'])
-def show_results():
-    if 'username' not in session:
-        return redirect(url_for('auth.login'))
+# PURITY TERBARU
+def calculate_purity(cluster_data):
+    # Total tweets
+    total_tweets = sum(cluster['total_tweets'] for cluster in cluster_data)
 
-    file_path = os.path.join(UPLOAD_FOLDER, 'ftc_cluster.json')
-    if not os.path.exists(file_path):
-        flash('Tidak ada hasil klaster yang tersedia.', 'danger')
-        return redirect(url_for('clustering.upload_file'))
+    # List untuk menyimpan data purity
+    purity_data = []
+    total_purity_numerator = 0
 
-    with open(file_path, 'r') as json_file:
-        json_data = json.load(json_file)
+    # Menghitung total purity
+    for cluster in cluster_data:
+        n_i = cluster['total_tweets']
+        max_tweets = cluster['max_tweets']
+        total_purity_numerator += max_tweets
 
-    username = session.get('username')
-    return render_template(
-        'upload.html',
-        json_data=json_data,
-        username=username,
-        current_url=request.path
-    )
+        purity_data.append({
+            'Cluster_id': cluster['cluster_id'],
+            'Jumlah tweet Setiap klaster': n_i,
+            'Jumlah tweet Maksimum di setiap klaster': max_tweets
+        })
 
-# Fungsi untuk memuat data JSON dari file
-def load_json_data(filepath):
-    try:
-        with open(filepath, 'r') as file:
-            data = json.load(file) # berfungsi untuk membaca file JSON
-        if not data:  # Cek jika file JSON kosong
-            return None, 'File JSON kosong'
-        return data, None
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        return None, str(e)
+    # Menghitung total purity
+    total_purity = total_purity_numerator / total_tweets
 
-# Fungsi untuk menghitung purity
-def calculate_purity(clustering_result):
+    # Menambahkan baris total
+    total_row = {
+        'Cluster_id': 'Total keseluruhan tweet',
+        'Jumlah tweet Setiap klaster': total_tweets,
+        'Jumlah tweet Maksimum di setiap klaster': ''
+    }
 
-    # EDITOR: NABIL 08/08/2024
-    # total_documents = sum(len(cluster["Documents"]) for cluster in clustering_result)
+    total_purity_row = {
+        'Cluster_id': 'Total Purity',
+        'Jumlah tweet Setiap klaster': '',
+        'Jumlah tweet Maksimum di setiap klaster': f"{total_purity:.4f}"
+    }
 
-    total_documents = sum(len(cluster["frequent_term_set"]) for cluster in clustering_result)
+    # Membuat DataFrame dan menambahkan baris total
+    df = pd.DataFrame(purity_data)
+    df_total = pd.DataFrame([total_row, total_purity_row])
+    df = pd.concat([df, df_total], ignore_index=True)
 
-    max_labels = 0
-    for cluster in clustering_result:
+    return df, total_purity
 
-        # EDITOR: NABIL 08/08/2024
-        # documents = cluster["Documents"]
-
-        documents = cluster["frequent_term_set"]
-
-        label_count = len(documents)  # Semua dokumen dianggap satu kelas
-        max_labels += label_count
-    purity = max_labels / total_documents
-    return purity
-
-# Route untuk halaman purity
 @clustering.route('/purity')
 def index():
     if 'username' not in session:
         return redirect(url_for('auth.login'))
 
-    username = session['username']
-
-    # EDITOR: NABIL 08/08/2024
-    # filepath = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc_cluster4.json'
-
-    # EDITOR: NABIL 08/08/2024
-    filepath = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc.json'
-
-    clustering_result, error_message = load_json_data(filepath)
-
-    if clustering_result:
-        purity = calculate_purity(clustering_result)
-
-        # Menghitung metrik untuk setiap cluster
-        # metrik adalah jumlah dokumen dalam cluster, jumlah label maksimum, dan proporsi label maksimum
-        cluster_metrics = [] # simpan kedalam
-        for cluster_id, cluster in enumerate(clustering_result):
-            # cluster_size = len(cluster["Documents"])
-            cluster_size = len(cluster["frequent_term_set"])
-            label_count = cluster_size  # Semua dokumen dianggap satu kelas
-            proportion = label_count / cluster_size
-            # cluster_metrics.append berfungsi untuk menambahkan data ke dalam list
-            cluster_metrics.append({
-                'Cluster ID': cluster_id + 1,
-                'Number of Tweets': cluster_size,
-                'Maximum Number of Tweets': label_count,
-                'Proportion': proportion
-            })
-
-    else:
-        purity = None
-        cluster_metrics = []
-        flash('Proses pengujian belum dilakukan atau file JSON tidak ditemukan / kosong.', 'danger')
-
-    return render_template(
-        'purity.html',
-        clusters=clustering_result,
-        purity=purity,
-        cluster_metrics=cluster_metrics,
-        username=username,
-        current_url=request.path
-    )
-
-
-# START CODE PURITY
-# def calculate_purity(clustering_result):
-#     total_documents = 0
-#     max_labels = 0
-
-#     for cluster in clustering_result:
-#         frequent_term_set = cluster["frequent_term_set"]
-
-#         # Menghitung frekuensi kemunculan dokumen di setiap frequent term set
-#         for term, (documents, _) in frequent_term_set.items():
-#             total_documents += len(documents)
-
-#             # Mengambil jumlah maksimum dari dokumen yang paling sering muncul
-#             label_counts = Counter(documents)
-#             max_label_count = max(label_counts.values())
-
-#             # Menambahkan jumlah maksimum dokumen yang paling sering muncul
-#             max_labels += max_label_count
-
-#     # Menghitung purity
-#     purity = max_labels / total_documents if total_documents > 0 else 0
-#     return purity
-
-# def get_lowest_candidates(clustering_result):
-#     lowest_candidates = []
-
-#     for iteration in clustering_result:
-#         frequent_term_set = iteration["frequent_term_set"]
-
-#         # Hitung jumlah candidate term
-#         num_candidates = len(frequent_term_set)
-
-#         # Simpan iterasi dan jumlah candidate
-#         lowest_candidates.append({
-#             "iteration": iteration.get("iteration", 0),  # Pastikan 'iteration' ada
-#             "lowest_candidates": num_candidates
-#         })
-
-#     # Sort berdasarkan jumlah candidate terendah
-#     lowest_candidates.sort(key=lambda x: x["lowest_candidates"])
-
-#     return lowest_candidates
-
-
-# @clustering.route('/purity')
-# def index():
-#     if 'username' not in session:
-#         return redirect(url_for('auth.login'))
-
-#     username = session['username']
-#     filepath = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc.json'
-
-#     clustering_result, error_message = load_json_data(filepath)
-
-#     if clustering_result:
-#         # Dapatkan lowest_candidates
-#         lowest_candidates = get_lowest_candidates(clustering_result)
-
-#         if lowest_candidates:
-#             # Ambil iterasi dengan lowest_candidates terendah
-#             lowest_candidates_iter = lowest_candidates[0]["iteration"]
-
-#             # Filter clustering_result untuk iterasi yang dipilih
-#             filtered_clustering_result = next(
-#                 (item for item in clustering_result if item["iteration"] == lowest_candidates_iter),
-#                 None
-#             )
-
-#             if filtered_clustering_result:
-#                 purity = calculate_purity([filtered_clustering_result])
-
-#                 cluster_metrics = []
-#                 frequent_term_set = filtered_clustering_result["frequent_term_set"]
-
-#                 for term, (documents, _) in frequent_term_set.items():
-#                     label_counts = Counter(documents)
-#                     max_label_count = max(label_counts.values())
-#                     cluster_size = len(documents)
-#                     proportion = max_label_count / cluster_size
-
-#                     cluster_metrics.append({
-#                         'Cluster ID': filtered_clustering_result["iteration"],
-#                         'Term': term,
-#                         'Number of Tweets': cluster_size,
-#                         'Maximum Number of Tweets': max_label_count,
-#                         'Proportion': proportion
-#                     })
-
-#             else:
-#                 purity = None
-#                 cluster_metrics = []
-#                 flash('Iterasi dengan lowest_candidates terendah tidak ditemukan atau file JSON tidak valid.', 'danger')
-
-#         else:
-#             purity = None
-#             cluster_metrics = []
-#             flash('Tidak ada data lowest_candidates tersedia.', 'danger')
-
-#     else:
-#         purity = None
-#         cluster_metrics = []
-#         flash('Proses pengujian belum dilakukan atau file JSON tidak ditemukan / kosong.', 'danger')
-
-#     return render_template(
-#         'purity.html',
-#         clusters=[filtered_clustering_result] if filtered_clustering_result else [],
-#         purity=purity,
-#         cluster_metrics=cluster_metrics,
-#         username=username,
-#         current_url=request.path
-#     )
-
-# END CODE PURITY
-
-
-
-# CODE PURITY NEW VERSION 1
-# EDITOR: NABIL 13/08/2024
-# Fungsi untuk menghitung purity
-# def calculate_purity(clustering_result):
-#     total_documents = 0
-#     max_labels = 0
-
-#     for cluster in clustering_result:
-#         frequent_term_set = cluster["frequent_term_set"]
-
-#         for term, (documents, _) in frequent_term_set.items():
-#             # Menghitung frekuensi kemunculan dokumen di setiap frequent term set
-#             total_documents += len(documents)
-
-#             print(f'Term: {term}')
-
-#             # Mengambil jumlah maksimum dari dokumen yang paling sering muncul
-#             label_counts = Counter(documents)
-
-#             print(f'Total Dokumen: {term}: {len(documents)}')
-
-#             # Mengambil jumlah maksimum dari dokumen yang paling sering muncul
-#             max_label_count = max(label_counts.values())
-#             print(f'Jumlah Dokumen Terbanyak: {max_label_count}')
-#             print(' ')
-
-#             # Menambahkan jumlah maksimum dokumen yang paling sering muncul
-#             max_labels += max_label_count
-
-#     # Menghitung purity
-#     purity = max_labels / total_documents
-#     return purity
-
-# # Route untuk halaman purity
-# @clustering.route('/purity')
-# def index():
-#     if 'username' not in session:
-#         return redirect(url_for('auth.login'))
-
-#     username = session['username']
-#     filepath = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc.json'
-
-#     clustering_result, error_message = load_json_data(filepath)
-
-#     if clustering_result:
-#         purity = calculate_purity(clustering_result)
-
-#         cluster_metrics = []
-#         for cluster_id, cluster in enumerate(clustering_result):
-#             frequent_term_set = cluster["frequent_term_set"]
-
-#             for term, (documents, _) in frequent_term_set.items():
-#                 label_counts = Counter(documents)
-#                 max_label_count = max(label_counts.values())
-#                 cluster_size = len(documents)
-#                 proportion = max_label_count / cluster_size
-
-#                 cluster_metrics.append({
-#                     'Cluster ID': cluster_id + 1,
-#                     'Term': term,
-#                     'Number of Tweets': cluster_size,
-#                     'Maximum Number of Tweets': max_label_count,
-#                     'Proportion': proportion
-#                 })
-#     else:
-#         purity = None
-#         cluster_metrics = []
-#         flash('Proses pengujian belum dilakukan atau file JSON tidak ditemukan / kosong.', 'danger')
-
-#     return render_template(
-#         'purity.html',
-#         clusters=clustering_result,
-#         purity=purity,
-#         cluster_metrics=cluster_metrics,
-#         username=username,
-#         current_url=request.path
-#     )
-
-
-# CODE PURITY NEW VERSION 2
-# EDITOR: NABIL 13/08/2024
-# Fungsi untuk menghitung purity dengan pendekatan frequent term set
-# def load_json_data(filepath):
-#     try:
-#         with open(filepath, 'r') as file:
-#             data = json.load(file)
-#         return data, None
-#     except Exception as e:
-#         return None, str(e)
-
-# def load_ground_truth(filepath):
-#     try:
-#         with open(filepath, 'r') as file:
-#             ground_truth = json.load(file)
-#         return ground_truth
-#     except Exception as e:
-#         print(f"Error loading ground truth: {e}")
-#         return None
-
-# def calculate_purity(clustering_result, ground_truth):
-#     total_documents = 0
-#     weighted_purity_sum = 0
-
-#     for cluster_id, cluster in enumerate(clustering_result):
-#         frequent_term_set = cluster["frequent_term_set"]
-
-#         for term, (documents, _) in frequent_term_set.items():
-#             total_documents += len(documents)
-#             label_counts = Counter()
-
-#             for doc_id in documents:
-#                 true_label = ground_truth.get(doc_id)
-#                 if true_label:
-#                     label_counts[true_label] += 1
-
-#             max_label_count = max(label_counts.values()) if label_counts else 0
-#             cluster_size = len(documents)
-#             proportion = max_label_count / cluster_size if cluster_size > 0 else 0
-#             weighted_purity_sum += proportion * (cluster_size / total_documents)
-
-#     purity = weighted_purity_sum
-#     return purity
-
-# @clustering.route('/purity')
-# def index():
-#     if 'username' not in session:
-#         return redirect(url_for('auth.login'))
-
-#     username = session['username']
-#     clustering_filepath = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ftc.json'
-#     ground_truth_filepath = 'C:/Fullstack-guru-honorer/Backend-GuruHonorer/uploads/ground_truth.json'
-
-#     clustering_result, error_message = load_json_data(clustering_filepath)
-#     ground_truth = load_ground_truth(ground_truth_filepath)
-
-#     if clustering_result and ground_truth:
-#         purity = calculate_purity(clustering_result, ground_truth)
-#         cluster_metrics = []
-
-#         # Menampilkan satu term per klaster ketika ada lebih dari satu
-#         for cluster_id, cluster in enumerate(clustering_result):
-#             frequent_term_set = cluster["frequent_term_set"]
-#             displayed_terms = set()
-
-#             for term, (documents, _) in frequent_term_set.items():
-#                 if term not in displayed_terms:
-#                     displayed_terms.add(term)
-#                     label_counts = Counter()
-
-#                     for doc_id in documents:
-#                         true_label = ground_truth.get(doc_id)
-#                         if true_label:
-#                             label_counts[true_label] += 1
-
-#                     max_label_count = max(label_counts.values()) if label_counts else 0
-#                     cluster_size = len(documents)
-#                     proportion = max_label_count / cluster_size if cluster_size > 0 else 0
-
-#                     cluster_metrics.append({
-#                         'Cluster ID': cluster_id + 1,
-#                         'Term': term,
-#                         'Number of Tweets': cluster_size,
-#                         'Maximum Number of Tweets': max_label_count,
-#                         'Proportion': proportion
-#                     })
-#                     break  # Keluar dari loop setelah menambahkan satu perwakilan term
-
-#     else:
-#         purity = None
-#         cluster_metrics = []
-#         flash('Proses pengujian belum dilakukan atau file JSON tidak ditemukan / kosong.', 'danger')
-
-#     return render_template(
-#         'purity.html',
-#         clusters=clustering_result,
-#         purity=purity,
-#         cluster_metrics=cluster_metrics,
-#         username=username,
-#         current_url=request.path
-#     )
+    # Data input: list of clusters with 'total_tweets' and 'max_tweets'
+    cluster_data = [
+        {'cluster_id': 1, 'total_tweets': 419, 'max_tweets': 262},
+        {'cluster_id': 2, 'total_tweets': 8, 'max_tweets': 3},
+        {'cluster_id': 3, 'total_tweets': 1, 'max_tweets': 1},
+        {'cluster_id': 4, 'total_tweets': 2, 'max_tweets': 2},
+    ]
+
+    # Calculate purity and get DataFrame
+    df, total_purity = calculate_purity(cluster_data)
+
+    # username
+    username = session.get('username')
+
+    # Convert DataFrame to HTML
+    table_html = df.to_html(index=False, classes='table table-striped')
+
+    return render_template('purity.html', table_html=table_html, total_purity=total_purity, username=username)
