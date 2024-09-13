@@ -5,10 +5,6 @@
 # Berhenti Menjalankan Aplikasi Website
 - CTR+C
 - deactivate
-
-# INFO!
--  Di branch dev-nabil Mysql + SQLAlchemy + ORM (Tidak ada perintah kode SQL dikodingannya)
--  Pada branch mysql-dev (Ada perinth kode SQL dikodingannya)
   
 ## API
 1. Proses crawling dataset csv
@@ -20,9 +16,9 @@
 4. Menampilkan hasil preprocessing
    - http://127.0.0.1:5000/show-preprocessing
 5. Proses klasterisasi Frequent Term Based Clustering (FTC)
-   - http://127.0.0.1:5000/ftc
+   - http://127.0.0.1:5000/cluster
 6. Menampilkan hasil klasterisasi FTC
-   - http://127.0.0.1:5000/ftc/results
+   - http://127.0.0.1:5000/view-cluster
 7. Menghapus database klasterisasi FTC, dataset preprocessing, dan file JSON FTC
    - http://127.0.0.1:5000/delete-clustering-ftc
 8. Memproses dan menampilkan pengujian menggunakan purity
