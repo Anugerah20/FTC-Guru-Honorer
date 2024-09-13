@@ -5,7 +5,17 @@
 {% block content %}
 <div class="container mt-5">
      <div class="table-responsive-sm table-responsive-md">
-          <h2 class="mb-3">Tweet Guru</h2>
+          <h2 class="mb-3">Tweet Data Guru</h2>
+
+          <form class="d-flex row g-3" method="POST" action="/upload-file" enctype="multipart/form-data">
+               <div class="col-md-6 col-lg-6">
+                    <label for="file" class="form-label">Unggah file csv</label>
+                    <input class="form-control" type="file" name="file" id="file" required>
+                    <button class="btn btn-dark my-3" type="submit">upload</button>
+               </div>
+          </form>
+
+          <p>Total Data: {{total_data}}</p>
           <table class="table table-bordered table-striped">
                <thead>
                     <tr>
@@ -13,6 +23,7 @@
                          <th>Username</th>
                          <th>Full Text</th>
                          <th>Created At</th>
+                         <th>Tweet URL</th>
                     </tr>
                </thead>
                <tbody>
@@ -22,10 +33,16 @@
                          <td>{{ row[15] }}</td>
                          <td>{{ row[4] }}</td>
                          <td>{{ row[2] }}</td>
+                         <td>{{ row[13] }}</td>
                     </tr>
                     {% endfor %}
                </tbody>
           </table>
+          {% if pagination.total_pages > 1 %}
+          <nav aria-label="Page navigation example">
+               {{ pagination.links }}
+          </nav>
+          {% endif %}
      </div>
 </div>
 {% endblock %}

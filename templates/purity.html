@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}Pengujian Purity{% endblock %}
+
+{% block content %}
+
+<body>
+     <style>
+          th,
+          td {
+               text-align: left;
+          }
+     </style>
+     <div class="container">
+          <h3 class="mt-4">Hasil Purity Clustering</h1>
+               <div class="mt-4">
+                    {{ table_html|safe }}
+               </div>
+               {% endblock %}

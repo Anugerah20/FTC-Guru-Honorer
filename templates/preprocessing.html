@@ -7,36 +7,43 @@
      <div class="table-responsive-sm table-responsive-md">
           <h2 class="mb-3">Preprocessing</h2>
 
-          <!-- <div class="row">
-               <div class="col-md-6 col-lg-6 my-3">
-                    <form method="post" enctype="multipart/form-data" action="">
-                         <label for="file">Unggah file csv</label>
-                         <input type="file" required>
-                         <button class="btn btn-dark">Unggah</button>
-                    </form>
+          <form class="d-flex row g-3" method="POST" action="/upload-preprocessing" enctype="multipart/form-data">
+               <div class="col-md-6 col-lg-6">
+                    <label for="file" class="form-label">Unggah file csv</label>
+                    <input class="form-control" type="file" name="file" id="file" required>
+                    <button class="btn btn-dark my-3" type="submit">upload</button>
                </div>
-          </div> -->
+          </form>
+          <!-- <p>Total Data: {{total_data}}</p> -->
 
           <table class="table table-bordered table-striped">
                <thead>
                     <tr>
                          <th>#</th>
-                         <!-- <th>Username</th> -->
+                         <th>Username</th>
                          <th>Full Text</th>
-                         <!-- <th>Created At</th> -->
+                         <th>Created At</th>
+                         <th>Tweet URL</th>
                     </tr>
                </thead>
                <tbody>
                     {% for row in data %}
                     <tr>
                          <td>{{ row[0] }}</td>
-                         <!-- <td>{{ row[1] }}</td> -->
+                         <td>{{ row[1] }}</td>
                          <td>{{ row[2] }}</td>
-                         <!-- <td>{{ row[3] }}</td> -->
+                         <td>{{ row[3] }}</td>
+                         <td>{{ row[4] }}</td>
                     </tr>
                     {% endfor %}
                </tbody>
           </table>
+          <!-- Pagination -->
+          {% if pagination.total_pages > 1 %}
+          <nav aria-label="Page navigation example">
+               {{ pagination.links }}
+          </nav>
+          {% endif %}
      </div>
 </div>
 {% endblock %}
